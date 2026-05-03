@@ -51,6 +51,22 @@ class TrainingUtilTests(unittest.TestCase):
         self.assertTrue(training.should_log_training_progress(600, 600, interval))
         self.assertFalse(training.should_log_training_progress(29, 600, interval))
 
+    def test_cuda_memory_diagnostics_handles_cpu_device(self):
+        diagnostics = training.cuda_memory_diagnostics("cpu")
+
+        self.assertEqual(diagnostics["device"], "cpu")
+        self.assertIn("cuda_available", diagnostics)
+
+    def test_parameter_placement_diagnostics_summarizes_devices_and_dtypes(self):
+        model = FakeDiffusion()
+
+        diagnostics = training.parameter_placement_diagnostics(model)
+
+        self.assertGreater(diagnostics["parameters"], 0)
+        self.assertGreater(diagnostics["elements"], 0)
+        self.assertIn({"key": "cpu", "count": diagnostics["parameters"]}, diagnostics["devices"])
+        self.assertEqual(diagnostics["inference_parameters"], 0)
+
     def test_choose_training_step_index_shift_stays_in_bounds(self):
         sigmas = torch.tensor([1.0, 0.9, 0.75, 0.5, 0.25, 0.0])
         values = [
@@ -124,6 +140,22 @@ class TrainingUtilTests(unittest.TestCase):
         self.assertEqual(diagnostics["lora_modules"], 1)
         self.assertEqual(diagnostics["enabled_lora_modules"], 1)
         self.assertEqual(diagnostics["trainable_lora_parameters"], 2)
+
+    def test_lora_parameter_placement_diagnostics_summarizes_lora_only(self):
+        model = FakeDiffusion()
+        lora_network.inject_lora_linear_modules(
+            model,
+            include_patterns=["model.diffusion_model.blocks.*.self_attn.*_proj"],
+            exclude_patterns=[],
+            rank=2,
+            alpha=2.0,
+        )
+
+        diagnostics = training.lora_parameter_placement_diagnostics(model)
+
+        self.assertEqual(diagnostics["parameters"], 2)
+        self.assertGreater(diagnostics["elements"], 0)
+        self.assertIn({"key": "cpu", "count": 2}, diagnostics["devices"])
 
     def test_set_lora_parameters_trainable_restores_lora_after_global_freeze(self):
         model = FakeDiffusion()

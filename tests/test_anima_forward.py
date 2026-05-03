@@ -116,6 +116,23 @@ class AnimaForwardTests(unittest.TestCase):
         self.assertFalse(output.is_inference())
         self.assertEqual(output.shape, (1, 2))
 
+    def test_safe_frozen_weight_reuses_normal_tensor_storage_when_already_aligned(self):
+        tensor = torch.ones(2, 3)
+
+        safe = anima_forward._safe_frozen_weight(tensor, device=tensor.device, dtype=tensor.dtype)
+
+        self.assertEqual(safe.data_ptr(), tensor.data_ptr())
+        self.assertFalse(safe.is_inference())
+
+    def test_safe_frozen_weight_clones_inference_tensor(self):
+        with torch.inference_mode():
+            tensor = torch.ones(2, 3)
+
+        safe = anima_forward._safe_frozen_weight(tensor, device=tensor.device, dtype=tensor.dtype)
+
+        self.assertNotEqual(safe.data_ptr(), tensor.data_ptr())
+        self.assertFalse(safe.is_inference())
+
     def test_safe_text_adapter_ops_aligns_embedding_weight_to_input_device(self):
         from unittest import mock
 

@@ -165,9 +165,14 @@ def _safe_frozen_weight(
 ) -> torch.Tensor | None:
     if tensor is None:
         return None
-    safe = normal_detached_tensor(tensor)
+    target_device = torch.device(device) if device is not None else tensor.device
+    target_dtype = dtype or tensor.dtype
+    if tensor.is_inference():
+        with torch.inference_mode(False):
+            return tensor.detach().to(device=target_device, dtype=target_dtype).clone()
+    safe = tensor.detach()
     if device is not None or dtype is not None:
-        safe = safe.to(device=device or safe.device, dtype=dtype or safe.dtype)
+        safe = safe.to(device=target_device, dtype=target_dtype)
     return safe
 
 
