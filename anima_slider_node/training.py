@@ -13,6 +13,7 @@ import torch.nn.functional as F
 
 from . import anima_forward, lora_network, slider_loss
 from .conditioning import AnimaPromptConds
+from .tensor_util import needs_normal_tensor
 
 
 LOGGER = logging.getLogger(__name__)
@@ -351,7 +352,7 @@ def materialize_inference_tensors_for_training(module: torch.nn.Module) -> dict[
     with torch.inference_mode(False):
         for child in module.modules():
             for name, parameter in list(child._parameters.items()):
-                if parameter is None or not parameter.is_inference():
+                if parameter is None or not needs_normal_tensor(parameter):
                     continue
                 replacement = torch.nn.Parameter(parameter.detach().clone(), requires_grad=parameter.requires_grad)
                 child._parameters[name] = replacement
@@ -359,7 +360,7 @@ def materialize_inference_tensors_for_training(module: torch.nn.Module) -> dict[
                 element_count += replacement.numel()
 
             for name, buffer in list(child._buffers.items()):
-                if buffer is None or not torch.is_tensor(buffer) or not buffer.is_inference():
+                if buffer is None or not torch.is_tensor(buffer) or not needs_normal_tensor(buffer):
                     continue
                 replacement = buffer.detach().clone()
                 child._buffers[name] = replacement

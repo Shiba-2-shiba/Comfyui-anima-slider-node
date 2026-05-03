@@ -10,7 +10,7 @@ import torch
 import torch.nn.functional as F
 
 from .conditioning import AnimaCond, AnimaPromptConds
-from .tensor_util import normal_detached_cpu_tensor, normal_detached_tensor
+from .tensor_util import needs_normal_tensor, normal_detached_cpu_tensor, normal_detached_tensor
 
 
 LOGGER = logging.getLogger(__name__)
@@ -125,7 +125,7 @@ def _batched_anima_extra(key: str, value: torch.Tensor) -> torch.Tensor:
 
 def _normalize_inference_tensors(value):
     if torch.is_tensor(value):
-        return normal_detached_tensor(value) if value.is_inference() else value
+        return normal_detached_tensor(value) if needs_normal_tensor(value) else value
     if isinstance(value, tuple):
         return tuple(_normalize_inference_tensors(item) for item in value)
     if isinstance(value, list):
@@ -167,7 +167,7 @@ def _safe_frozen_weight(
         return None
     target_device = torch.device(device) if device is not None else tensor.device
     target_dtype = dtype or tensor.dtype
-    if tensor.is_inference():
+    if needs_normal_tensor(tensor):
         with torch.inference_mode(False):
             return tensor.detach().to(device=target_device, dtype=target_dtype).clone()
     safe = tensor.detach()
@@ -177,7 +177,7 @@ def _safe_frozen_weight(
 
 
 def _safe_forward_input(tensor: torch.Tensor) -> torch.Tensor:
-    return normal_detached_tensor(tensor) if tensor.is_inference() else tensor
+    return normal_detached_tensor(tensor) if needs_normal_tensor(tensor) else tensor
 
 
 def _tensor_debug(tensor: torch.Tensor | None) -> dict[str, object] | None:

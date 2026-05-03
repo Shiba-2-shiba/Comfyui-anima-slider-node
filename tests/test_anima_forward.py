@@ -133,6 +133,20 @@ class AnimaForwardTests(unittest.TestCase):
         self.assertNotEqual(safe.data_ptr(), tensor.data_ptr())
         self.assertFalse(safe.is_inference())
 
+    def test_safe_frozen_weight_clones_tensor_without_version_counter(self):
+        with torch.inference_mode():
+            module = torch.nn.Linear(3, 2, bias=False)
+        module.to(dtype=torch.float64)
+
+        with self.assertRaisesRegex(RuntimeError, "Inference tensors do not track version counter"):
+            module.weight._version
+
+        safe = anima_forward._safe_frozen_weight(module.weight, device=module.weight.device, dtype=module.weight.dtype)
+
+        self.assertNotEqual(safe.data_ptr(), module.weight.data_ptr())
+        self.assertFalse(safe.is_inference())
+        self.assertEqual(safe._version, 0)
+
     def test_safe_text_adapter_ops_aligns_embedding_weight_to_input_device(self):
         from unittest import mock
 

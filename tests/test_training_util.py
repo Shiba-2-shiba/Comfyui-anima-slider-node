@@ -226,6 +226,25 @@ class TrainingUtilTests(unittest.TestCase):
         self.assertFalse(linear.weight.is_inference())
         self.assertIsNotNone(x.grad)
 
+    def test_materialize_tensors_without_version_counter_after_dtype_move(self):
+        with torch.inference_mode():
+            linear = torch.nn.Linear(3, 4, bias=False)
+        linear.to(dtype=torch.float64)
+
+        self.assertFalse(linear.weight.is_inference())
+        with self.assertRaisesRegex(RuntimeError, "Inference tensors do not track version counter"):
+            linear.weight._version
+
+        summary = training.materialize_inference_tensors_for_training(linear)
+        x = torch.randn(2, 3, dtype=torch.float64, requires_grad=True)
+        y = linear(x)
+        y.sum().backward()
+
+        self.assertEqual(summary["materialized_parameters"], 1)
+        self.assertFalse(linear.weight.is_inference())
+        self.assertEqual(linear.weight._version, 0)
+        self.assertIsNotNone(x.grad)
+
 
 if __name__ == "__main__":
     unittest.main()
