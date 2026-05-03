@@ -22,7 +22,7 @@ ComfyUI を再起動すると、`training/anima slider` に `Train Anima Slider 
 - `VAE`: ワークフロー互換用の入力。現在の text-only loss では画像 encode には使いません
 - `prompt_yaml`: 同梱 `prompts/*.yaml` から選択
 - `custom_prompt_yaml_path`: 任意の YAML を直接指定する場合に使用
-- `steps`, `lr`, `rank`, `alpha`, `network_preset`, `width`, `height` などの学習設定
+- `steps`, `lr`, `rank`, `alpha`, `network_preset`, `model_residency`, `width`, `height` などの学習設定
 
 出力:
 
@@ -56,4 +56,5 @@ YAML は list 形式です。
 - この実装は `anima-slider-experiment` の flow slider trainer を ComfyUI 入力モデル向けに移植したものです。
 - `MODEL` に LoRA wrapper を一時注入しますが、学習終了時に元の linear module へ戻します。
 - `steps` の既定値は `600` です。短い smoke 確認だけ行う場合は、一時的に `steps=3`, `width=512`, `height=512`, `prompt_indices=0,1,2,3` 程度まで下げてください。
+- `model_residency=prefer_cuda` は ComfyUI のロード後に base model を CUDA へ寄せる best-effort 設定です。OOM になる環境では `dynamic` に戻してください。
 - bundled prompt のうち年齢語を含む YAML は `allow_unsafe_age_terms=True` が必要な場合があります。

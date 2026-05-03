@@ -157,10 +157,23 @@ def _safe_tensor_for_no_grad_op(tensor: torch.Tensor | None) -> torch.Tensor | N
     return normal_detached_tensor(tensor)
 
 
-def _safe_frozen_weight(tensor: torch.Tensor | None) -> torch.Tensor | None:
+def _safe_frozen_weight(
+    tensor: torch.Tensor | None,
+    *,
+    device: torch.device | str | None = None,
+    dtype: torch.dtype | None = None,
+) -> torch.Tensor | None:
     if tensor is None:
         return None
-    return normal_detached_tensor(tensor)
+    target_device = torch.device(device) if device is not None else tensor.device
+    target_dtype = dtype or tensor.dtype
+    if tensor.is_inference():
+        with torch.inference_mode(False):
+            return tensor.detach().to(device=target_device, dtype=target_dtype).clone()
+    safe = tensor.detach()
+    if device is not None or dtype is not None:
+        safe = safe.to(device=target_device, dtype=target_dtype)
+    return safe
 
 
 def _safe_forward_input(tensor: torch.Tensor) -> torch.Tensor:
@@ -187,8 +200,8 @@ def _tensor_debug(tensor: torch.Tensor | None) -> dict[str, object] | None:
 
 def _safe_linear_forward(self, input):
     safe_input = _safe_forward_input(input)
-    safe_weight = _safe_frozen_weight(self.weight)
-    safe_bias = _safe_frozen_weight(self.bias)
+    safe_weight = _safe_frozen_weight(self.weight, device=safe_input.device, dtype=safe_input.dtype)
+    safe_bias = _safe_frozen_weight(self.bias, device=safe_input.device, dtype=safe_input.dtype)
     try:
         return F.linear(safe_input, safe_weight, safe_bias)
     except RuntimeError:
@@ -205,9 +218,14 @@ def _safe_linear_forward(self, input):
 
 
 def _safe_embedding_forward(self, input, out_dtype=None):
+    safe_weight = _safe_frozen_weight(
+        self.weight,
+        device=input.device,
+        dtype=out_dtype if out_dtype is not None else self.weight.dtype,
+    )
     output = F.embedding(
         input,
-        _safe_frozen_weight(self.weight),
+        safe_weight,
         self.padding_idx,
         self.max_norm,
         self.norm_type,
@@ -218,20 +236,22 @@ def _safe_embedding_forward(self, input, out_dtype=None):
 
 
 def _safe_layer_norm_forward(self, input):
+    safe_input = _safe_forward_input(input)
     return F.layer_norm(
-        _safe_forward_input(input),
+        safe_input,
         self.normalized_shape,
-        _safe_frozen_weight(self.weight),
-        _safe_frozen_weight(self.bias),
+        _safe_frozen_weight(self.weight, device=safe_input.device, dtype=safe_input.dtype),
+        _safe_frozen_weight(self.bias, device=safe_input.device, dtype=safe_input.dtype),
         self.eps,
     )
 
 
 def _safe_rms_norm_forward(self, input):
+    safe_input = _safe_forward_input(input)
     return F.rms_norm(
-        _safe_forward_input(input),
+        safe_input,
         self.normalized_shape,
-        _safe_frozen_weight(self.weight),
+        _safe_frozen_weight(self.weight, device=safe_input.device, dtype=safe_input.dtype),
         self.eps,
     )
 
@@ -265,7 +285,7 @@ def safe_text_adapter_ops(module: torch.nn.Module):
             child.forward = MethodType(replacement, child)
             counts[key] += 1
 
-    LOGGER.info("Patched Anima text adapter ops for no-grad precompute: %s", counts)
+    LOGGER.debug("Patched Anima text adapter ops for no-grad precompute: %s", counts)
     try:
         yield
     finally:

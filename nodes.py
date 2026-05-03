@@ -83,6 +83,7 @@ class AnimaSliderTrainLoraNode(io.ComfyNode):
                 io.Combo.Input("network_preset", options=sorted(config.NETWORK_PRESETS), default="attn_mlp", tooltip="LoRA target preset."),
                 io.String.Input("network_reg_dims", multiline=True, default="", tooltip="Optional YAML mapping of regex fullmatch patterns to LoRA ranks."),
                 io.String.Input("network_reg_lrs", multiline=True, default="", tooltip="Optional YAML mapping of regex fullmatch patterns to learning rates."),
+                io.Combo.Input("model_residency", options=["prefer_cuda", "dynamic"], default="prefer_cuda", tooltip="Best-effort base model residency after ComfyUI loading. Falls back to DynamicVRAM behavior if CUDA promotion fails."),
                 io.Int.Input("width", default=512, min=16, max=4096, step=16, tooltip="Training latent width in pixels."),
                 io.Int.Input("height", default=512, min=16, max=4096, step=16, tooltip="Training latent height in pixels."),
                 io.Int.Input("num_inference_steps", default=20, min=3, max=200, tooltip="Number of simple scheduler sigmas."),
@@ -126,6 +127,7 @@ class AnimaSliderTrainLoraNode(io.ComfyNode):
         network_preset,
         network_reg_dims,
         network_reg_lrs,
+        model_residency,
         width,
         height,
         num_inference_steps,
@@ -184,6 +186,7 @@ class AnimaSliderTrainLoraNode(io.ComfyNode):
             exclude_patterns=exclude_patterns,
             reg_dims=config.parse_yaml_mapping(network_reg_dims, int),
             reg_lrs=config.parse_yaml_mapping(network_reg_lrs, float),
+            model_residency=model_residency,
         )
 
         from comfy.utils import ProgressBar  # type: ignore

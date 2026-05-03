@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 from collections import Counter
+from contextlib import nullcontext
 from dataclasses import dataclass
 import logging
 import math
+import time
 from typing import Any
 
 import torch
@@ -44,6 +46,7 @@ class TrainRequest:
     exclude_patterns: list[str]
     reg_dims: dict[str, int]
     reg_lrs: dict[str, float]
+    model_residency: str
 
 
 def freeze_parameters(model: torch.nn.Module):
@@ -69,6 +72,133 @@ def validate_indices(indices: list[int], record_count: int, label: str) -> None:
 def validate_anima_resolution(width: int, height: int, step: int = 16):
     if width % step != 0 or height % step != 0:
         raise ValueError(f"Anima training resolution must be divisible by {step}, got {width}x{height}")
+
+
+def progress_log_interval(total_steps: int, target_logs: int = 20) -> int:
+    if total_steps <= 0:
+        raise ValueError("total_steps must be positive")
+    if target_logs <= 0:
+        raise ValueError("target_logs must be positive")
+    return max(1, total_steps // target_logs)
+
+
+def should_log_training_progress(step_number: int, total_steps: int, interval: int) -> bool:
+    return step_number == 1 or step_number == total_steps or step_number % interval == 0
+
+
+def cuda_memory_diagnostics(device: torch.device | str) -> dict[str, object]:
+    target = torch.device(device)
+    if target.type != "cuda" or not torch.cuda.is_available():
+        return {"device": str(target), "cuda_available": bool(torch.cuda.is_available())}
+    return {
+        "device": str(target),
+        "allocated_mb": round(torch.cuda.memory_allocated(target) / (1024 * 1024), 1),
+        "reserved_mb": round(torch.cuda.memory_reserved(target) / (1024 * 1024), 1),
+        "max_allocated_mb": round(torch.cuda.max_memory_allocated(target) / (1024 * 1024), 1),
+        "max_reserved_mb": round(torch.cuda.max_memory_reserved(target) / (1024 * 1024), 1),
+    }
+
+
+def _compact_counter(counter: Counter) -> list[dict[str, object]]:
+    return [{"key": key, "count": count} for key, count in sorted(counter.items(), key=lambda item: str(item[0]))]
+
+
+def parameter_placement_diagnostics(module: torch.nn.Module) -> dict[str, object]:
+    parameter_count = 0
+    element_count = 0
+    inference_parameter_count = 0
+    inference_element_count = 0
+    devices = Counter()
+    dtypes = Counter()
+    device_elements = Counter()
+    dtype_elements = Counter()
+    for parameter in module.parameters():
+        parameter_count += 1
+        elements = parameter.numel()
+        element_count += elements
+        device = str(parameter.device)
+        dtype = str(parameter.dtype).removeprefix("torch.")
+        devices[device] += 1
+        dtypes[dtype] += 1
+        device_elements[device] += elements
+        dtype_elements[dtype] += elements
+        if parameter.is_inference():
+            inference_parameter_count += 1
+            inference_element_count += elements
+    return {
+        "parameters": parameter_count,
+        "elements": element_count,
+        "devices": _compact_counter(devices),
+        "dtypes": _compact_counter(dtypes),
+        "device_elements": _compact_counter(device_elements),
+        "dtype_elements": _compact_counter(dtype_elements),
+        "inference_parameters": inference_parameter_count,
+        "inference_elements": inference_element_count,
+    }
+
+
+def lora_parameter_placement_diagnostics(model: torch.nn.Module) -> dict[str, object]:
+    devices = Counter()
+    dtypes = Counter()
+    element_count = 0
+    parameter_count = 0
+    for module in model.modules():
+        if not isinstance(module, lora_network.LoRALinear):
+            continue
+        for parameter in list(module.lora_down.parameters()) + list(module.lora_up.parameters()):
+            parameter_count += 1
+            elements = parameter.numel()
+            element_count += elements
+            devices[str(parameter.device)] += 1
+            dtypes[str(parameter.dtype).removeprefix("torch.")] += 1
+    return {
+        "parameters": parameter_count,
+        "elements": element_count,
+        "devices": _compact_counter(devices),
+        "dtypes": _compact_counter(dtypes),
+    }
+
+
+def promote_model_residency(module: torch.nn.Module, device: torch.device | str, mode: str) -> dict[str, object]:
+    target = torch.device(device)
+    if mode not in {"dynamic", "prefer_cuda"}:
+        raise ValueError(f"Unsupported model_residency: {mode!r}")
+    if mode == "dynamic":
+        return {"mode": mode, "attempted": False, "reason": "dynamic residency requested"}
+    if target.type != "cuda":
+        return {"mode": mode, "attempted": False, "reason": f"target device is {target.type}"}
+    if not torch.cuda.is_available():
+        return {"mode": mode, "attempted": False, "reason": "CUDA is not available"}
+
+    started_at = time.perf_counter()
+    before = parameter_placement_diagnostics(module)
+    try:
+        module.to(device=target)
+        torch.cuda.synchronize(target)
+    except RuntimeError as exc:
+        if "out of memory" in str(exc).lower():
+            torch.cuda.empty_cache()
+        return {
+            "mode": mode,
+            "attempted": True,
+            "promoted": False,
+            "elapsed": round(time.perf_counter() - started_at, 3),
+            "error_type": type(exc).__name__,
+            "error": str(exc).splitlines()[0][:500],
+            "before": before,
+            "after": parameter_placement_diagnostics(module),
+            "cuda_memory": cuda_memory_diagnostics(target),
+        }
+
+    return {
+        "mode": mode,
+        "attempted": True,
+        "promoted": True,
+        "elapsed": round(time.perf_counter() - started_at, 3),
+        "before": before,
+        "after": parameter_placement_diagnostics(module),
+        "cuda_memory": cuda_memory_diagnostics(target),
+    }
 
 
 def resolve_step_bounds(num_inference_steps: int, min_step_index: int | None, max_step_index: int | None) -> tuple[int, int]:
@@ -190,6 +320,25 @@ def build_lora_optimizer_param_groups(
     return list(groups_by_key.values()), list(summaries_by_key.values())
 
 
+def set_lora_parameters_trainable(model: torch.nn.Module, trainable: bool = True) -> dict[str, int]:
+    module_count = 0
+    parameter_count = 0
+    element_count = 0
+    for module in model.modules():
+        if not isinstance(module, lora_network.LoRALinear):
+            continue
+        module_count += 1
+        for parameter in list(module.lora_down.parameters()) + list(module.lora_up.parameters()):
+            parameter.requires_grad_(trainable)
+            parameter_count += 1
+            element_count += parameter.numel()
+    return {
+        "lora_modules": module_count,
+        "lora_parameters": parameter_count,
+        "lora_elements": element_count,
+    }
+
+
 def summarize_injected_lora_ranks(injected) -> list[dict[str, int]]:
     counts = Counter(item.rank for item in injected)
     return [{"rank": rank, "module_count": counts[rank]} for rank in sorted(counts)]
@@ -275,11 +424,48 @@ def branch_loss_for_teacher(
     lora_multiplier: float,
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     context = torch.enable_grad() if train else torch.no_grad()
-    with context, lora_network.lora_enabled(patcher.model, True), lora_network.lora_multiplier(patcher.model, lora_multiplier):
+    inference_context = torch.inference_mode(False) if train else nullcontext()
+    with inference_context, context, lora_network.lora_enabled(patcher.model, True), lora_network.lora_multiplier(patcher.model, lora_multiplier):
         model_pred = forward_role(patcher, latent, sigma, target_cond)
         raw_loss = F.mse_loss(model_pred.float(), teacher.float())
         loss = raw_loss * loss_weight.to(device=raw_loss.device)
+    if train:
+        ensure_trainable_loss(loss, patcher.model)
     return loss, raw_loss, model_pred
+
+
+def lora_training_diagnostics(model: torch.nn.Module) -> dict[str, int]:
+    module_count = 0
+    enabled_count = 0
+    trainable_parameter_count = 0
+    trainable_element_count = 0
+    for module in model.modules():
+        if not isinstance(module, lora_network.LoRALinear):
+            continue
+        module_count += 1
+        enabled_count += int(module.enabled)
+        for parameter in list(module.lora_down.parameters()) + list(module.lora_up.parameters()):
+            trainable_parameter_count += int(parameter.requires_grad)
+            if parameter.requires_grad:
+                trainable_element_count += parameter.numel()
+    return {
+        "lora_modules": module_count,
+        "enabled_lora_modules": enabled_count,
+        "trainable_lora_parameters": trainable_parameter_count,
+        "trainable_lora_elements": trainable_element_count,
+    }
+
+
+def ensure_trainable_loss(loss: torch.Tensor, model: torch.nn.Module) -> None:
+    if loss.requires_grad:
+        return
+    diagnostics = lora_training_diagnostics(model)
+    raise RuntimeError(
+        "Training loss is detached before backward; LoRA parameters are not connected to this forward pass. "
+        f"Diagnostics: {diagnostics}. "
+        "This usually means the ComfyUI model forward is running under a no-grad/inference path, "
+        "or the selected LoRA target preset does not affect the active Anima forward path."
+    )
 
 
 def build_flow_loss_info(
@@ -317,7 +503,10 @@ def flow_loss_for_record(
     train: bool,
     direction_loss: str = "enhance_only",
 ) -> tuple[torch.Tensor, dict]:
+    total_started_at = time.perf_counter()
+    timings = {}
     device = patcher.load_device
+    started_at = time.perf_counter()
     noise = anima_forward.make_random_latent(
         patcher,
         width=width,
@@ -326,28 +515,40 @@ def flow_loss_for_record(
         seed=seed,
         device=device,
     )
+    timings["noise"] = time.perf_counter() - started_at
     step_index = anima_forward.validate_training_step_index(sigmas, step_index)
+    started_at = time.perf_counter()
     latent = target_trajectory_latent(patcher, noise, sigmas, step_index=step_index, cond=record.conds["target"])
+    timings["target_trajectory"] = time.perf_counter() - started_at
     sigma = sigmas[step_index].reshape(1).repeat(record.batch_size).to(device)
+    started_at = time.perf_counter()
     teacher_parts = compute_flow_teacher_parts(patcher, latent, sigma, record)
+    timings["teacher_parts"] = time.perf_counter() - started_at
     loss_weight = compute_loss_weight_for_sigma(sigma, loss_weighting_scheme).mean().to(device)
 
     if direction_loss == "enhance_only":
         teacher = teacher_from_parts(teacher_parts, eta=eta, action=record.action).detach()
+        started_at = time.perf_counter()
         loss, raw_loss, model_pred = branch_loss_for_teacher(
             patcher, latent, sigma, record.conds["target"], teacher, loss_weight, train=train, lora_multiplier=1.0
         )
-        return loss, build_flow_loss_info(step_index, sigmas, loss_weight, raw_loss, model_pred, teacher_parts, teacher)
+        timings["lora_forward_loss"] = time.perf_counter() - started_at
+        info = build_flow_loss_info(step_index, sigmas, loss_weight, raw_loss, model_pred, teacher_parts, teacher)
+        timings["total_forward"] = time.perf_counter() - total_started_at
+        info["phase_timings"] = {key: round(value, 3) for key, value in timings.items()}
+        return loss, info
 
     if direction_loss == "bidirectional":
         enhance_teacher = teacher_from_parts(teacher_parts, eta=eta, action="enhance").detach()
         erase_teacher = teacher_from_parts(teacher_parts, eta=eta, action="erase").detach()
+        started_at = time.perf_counter()
         enhance_loss, enhance_raw_loss, enhance_model_pred = branch_loss_for_teacher(
             patcher, latent, sigma, record.conds["target"], enhance_teacher, loss_weight, train=train, lora_multiplier=1.0
         )
         erase_loss, erase_raw_loss, erase_model_pred = branch_loss_for_teacher(
             patcher, latent, sigma, record.conds["target"], erase_teacher, loss_weight, train=train, lora_multiplier=-1.0
         )
+        timings["lora_forward_loss"] = time.perf_counter() - started_at
         loss = (enhance_loss + erase_loss) * 0.5
         raw_loss = (enhance_raw_loss + erase_raw_loss) * 0.5
         info = build_flow_loss_info(step_index, sigmas, loss_weight, raw_loss, enhance_model_pred, teacher_parts, enhance_teacher)
@@ -360,6 +561,8 @@ def flow_loss_for_record(
                 "erase_model_pred_norm": tensor_norm(erase_model_pred),
             }
         )
+        timings["total_forward"] = time.perf_counter() - total_started_at
+        info["phase_timings"] = {key: round(value, 3) for key, value in timings.items()}
         return loss, info
     raise ValueError(f"Unsupported direction_loss: {direction_loss!r}")
 
@@ -429,23 +632,39 @@ def train_lora_from_records(model, records: list[AnimaPromptConds], request: Tra
         if not injected:
             raise RuntimeError("No LoRA targets matched the configured include/exclude patterns")
 
+        device = mp.load_device
+        image_seq_len = (request.height // 16) * (request.width // 16)
+
+        import comfy.model_management  # type: ignore
+
+        setup_started_at = time.perf_counter()
+        comfy.model_management.load_models_gpu([mp], force_full_load=True)
+        materialization_summary = materialize_inference_tensors_for_training(mp.model)
+        LOGGER.info("Anima slider training tensor materialization: %s", materialization_summary)
+        lora_trainable_summary = set_lora_parameters_trainable(mp.model, True)
+        LOGGER.info("Anima slider LoRA trainable parameters restored: %s", lora_trainable_summary)
+        residency_summary = promote_model_residency(mp.model, device, request.model_residency)
+        if residency_summary.get("promoted"):
+            lora_trainable_summary = set_lora_parameters_trainable(mp.model, True)
+        LOGGER.info("Anima slider model residency attempt: %s", residency_summary)
+        model_placement_summary = parameter_placement_diagnostics(mp.model)
+        lora_placement_summary = lora_parameter_placement_diagnostics(mp.model)
+        cuda_memory_after_setup = cuda_memory_diagnostics(device)
+        LOGGER.info("Anima slider model placement after setup: %s", model_placement_summary)
+        LOGGER.info("Anima slider LoRA placement after setup: %s", lora_placement_summary)
+        LOGGER.info("Anima slider CUDA memory after setup: %s", cuda_memory_after_setup)
         optimizer_param_groups, optimizer_group_summary = build_lora_optimizer_param_groups(
             mp.model,
             fallback_lr=request.lr,
             reg_lrs=request.reg_lrs,
         )
         optimizer = torch.optim.AdamW(optimizer_param_groups, lr=request.lr)
-        device = mp.load_device
-        image_seq_len = (request.height // 16) * (request.width // 16)
-
-        import comfy.model_management  # type: ignore
-
-        comfy.model_management.load_models_gpu([mp], force_full_load=True)
-        materialization_summary = materialize_inference_tensors_for_training(mp.model)
-        LOGGER.info("Anima slider training tensor materialization: %s", materialization_summary)
+        LOGGER.info("Anima slider setup complete: elapsed=%.1fs", time.perf_counter() - setup_started_at)
+        precompute_started_at = time.perf_counter()
+        LOGGER.info("Anima slider text adapter precompute started: conditions=%s", len(records) * 4)
         with lora_network.lora_enabled(mp.model, False):
             records, text_adapter_summary = anima_forward.precompute_anima_text_adapter_records(mp, records)
-        LOGGER.info("Anima text adapter precompute: %s", text_adapter_summary)
+        LOGGER.info("Anima text adapter precompute: %s, elapsed=%.1fs", text_adapter_summary, time.perf_counter() - precompute_started_at)
         train_records = [records[index] for index in request.prompt_indices]
         eval_records = [records[index] for index in request.eval_prompt_indices]
         sigmas = anima_forward.sigmas_for_steps(
@@ -461,9 +680,22 @@ def train_lora_from_records(model, records: list[AnimaPromptConds], request: Tra
         step_records = []
         initial_eval = None
         final_eval = None
+        log_interval = progress_log_interval(request.steps)
 
         try:
             mp.pre_run()
+            training_started_at = time.perf_counter()
+            LOGGER.info(
+                "Anima slider training started: steps=%s, train_prompts=%s, eval_prompts=%s, resolution=%sx%s, device=%s",
+                request.steps,
+                len(train_records),
+                len(eval_records),
+                request.width,
+                request.height,
+                device,
+            )
+            initial_eval_started_at = time.perf_counter()
+            LOGGER.info("Anima slider initial eval started: eval_prompts=%s, eval_steps=%s", len(eval_records), eval_step_indices)
             initial_eval = evaluate_records(
                 mp,
                 eval_records,
@@ -476,6 +708,15 @@ def train_lora_from_records(model, records: list[AnimaPromptConds], request: Tra
                 loss_weighting_scheme=request.loss_weighting_scheme,
                 direction_loss=request.direction_loss,
             )
+            LOGGER.info(
+                "Anima slider initial eval complete: mean_loss=%.6g, elapsed=%.1fs, cuda_memory=%s",
+                initial_eval["mean_loss"],
+                time.perf_counter() - initial_eval_started_at,
+                cuda_memory_diagnostics(device),
+            )
+            loop_started_at = time.perf_counter()
+            last_progress_log_at = loop_started_at
+            last_progress_step = 0
             for step in range(request.steps):
                 record = train_records[step % len(train_records)]
                 step_seed = request.seed + step if request.vary_seed else request.seed
@@ -490,6 +731,15 @@ def train_lora_from_records(model, records: list[AnimaPromptConds], request: Tra
                     discrete_flow_shift=request.discrete_flow_shift,
                     image_seq_len=image_seq_len,
                 )
+                step_number = step + 1
+                if should_log_training_progress(step_number, request.steps, log_interval):
+                    LOGGER.info(
+                        "Anima slider training step started: step %s/%s (%.1f%%), prompt_index=%s",
+                        step_number,
+                        request.steps,
+                        100.0 * step_number / request.steps,
+                        record.prompt_index,
+                    )
                 optimizer.zero_grad(set_to_none=True)
                 loss, info = flow_loss_for_record(
                     mp,
@@ -504,14 +754,40 @@ def train_lora_from_records(model, records: list[AnimaPromptConds], request: Tra
                     train=True,
                     direction_loss=request.direction_loss,
                 )
+                backward_started_at = time.perf_counter()
                 loss.backward()
+                info.setdefault("phase_timings", {})["backward"] = round(time.perf_counter() - backward_started_at, 3)
+                optimizer_started_at = time.perf_counter()
                 optimizer.step()
+                info.setdefault("phase_timings", {})["optimizer_step"] = round(time.perf_counter() - optimizer_started_at, 3)
                 loss_value = float(loss.detach().cpu().item())
                 losses.append(loss_value)
                 step_records.append({"step": step + 1, "prompt_index": record.prompt_index, "seed": step_seed, "loss": loss_value, **info})
                 if progress is not None:
                     progress.update(1)
+                if should_log_training_progress(step_number, request.steps, log_interval):
+                    now = time.perf_counter()
+                    elapsed = now - loop_started_at
+                    interval_seconds = now - last_progress_log_at
+                    interval_steps = max(1, step_number - last_progress_step)
+                    LOGGER.info(
+                        "Anima slider training progress: step %s/%s (%.1f%%), prompt_index=%s, loss=%.6g, elapsed=%.1fs, interval=%.1fs, sec_per_step=%.2f, phase_timings=%s, cuda_memory=%s",
+                        step_number,
+                        request.steps,
+                        100.0 * step_number / request.steps,
+                        record.prompt_index,
+                        loss_value,
+                        elapsed,
+                        interval_seconds,
+                        interval_seconds / interval_steps,
+                        info.get("phase_timings", {}),
+                        cuda_memory_diagnostics(device),
+                    )
+                    last_progress_log_at = now
+                    last_progress_step = step_number
 
+            final_eval_started_at = time.perf_counter()
+            LOGGER.info("Anima slider final eval started: eval_prompts=%s, eval_steps=%s", len(eval_records), eval_step_indices)
             final_eval = evaluate_records(
                 mp,
                 eval_records,
@@ -524,7 +800,20 @@ def train_lora_from_records(model, records: list[AnimaPromptConds], request: Tra
                 loss_weighting_scheme=request.loss_weighting_scheme,
                 direction_loss=request.direction_loss,
             )
+            LOGGER.info(
+                "Anima slider final eval complete: mean_loss=%.6g, elapsed=%.1fs, cuda_memory=%s",
+                final_eval["mean_loss"],
+                time.perf_counter() - final_eval_started_at,
+                cuda_memory_diagnostics(device),
+            )
             lora_sd = lora_network.lora_state_dict_from_model(mp.model)
+            LOGGER.info(
+                "Anima slider training finished: steps=%s, final_loss=%.6g, total_elapsed=%.1fs, cuda_memory=%s",
+                request.steps,
+                losses[-1] if losses else float("nan"),
+                time.perf_counter() - training_started_at,
+                cuda_memory_diagnostics(device),
+            )
         finally:
             mp.cleanup()
 
@@ -544,6 +833,11 @@ def train_lora_from_records(model, records: list[AnimaPromptConds], request: Tra
             "injected_target_ranks": summarize_injected_lora_ranks(injected),
             "optimizer_param_groups": optimizer_group_summary,
             "comfyui_training_tensor_materialization": materialization_summary,
+            "lora_trainable_parameters": lora_trainable_summary,
+            "model_residency": residency_summary,
+            "model_placement_after_setup": model_placement_summary,
+            "lora_placement_after_setup": lora_placement_summary,
+            "cuda_memory_after_setup": cuda_memory_after_setup,
             "anima_text_adapter_precompute": text_adapter_summary,
             "num_inference_steps": request.num_inference_steps,
             "scheduler_name": request.scheduler_name,

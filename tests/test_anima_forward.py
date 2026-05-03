@@ -116,6 +116,42 @@ class AnimaForwardTests(unittest.TestCase):
         self.assertFalse(output.is_inference())
         self.assertEqual(output.shape, (1, 2))
 
+    def test_safe_frozen_weight_reuses_normal_tensor_storage_when_already_aligned(self):
+        tensor = torch.ones(2, 3)
+
+        safe = anima_forward._safe_frozen_weight(tensor, device=tensor.device, dtype=tensor.dtype)
+
+        self.assertEqual(safe.data_ptr(), tensor.data_ptr())
+        self.assertFalse(safe.is_inference())
+
+    def test_safe_frozen_weight_clones_inference_tensor(self):
+        with torch.inference_mode():
+            tensor = torch.ones(2, 3)
+
+        safe = anima_forward._safe_frozen_weight(tensor, device=tensor.device, dtype=tensor.dtype)
+
+        self.assertNotEqual(safe.data_ptr(), tensor.data_ptr())
+        self.assertFalse(safe.is_inference())
+
+    def test_safe_text_adapter_ops_aligns_embedding_weight_to_input_device(self):
+        from unittest import mock
+
+        module = torch.nn.Embedding(8, 4)
+        input_tensor = torch.tensor([[1, 2, 3]])
+        calls = []
+        original_safe_frozen_weight = anima_forward._safe_frozen_weight
+
+        def record_safe_frozen_weight(tensor, *, device=None, dtype=None):
+            calls.append({"device": device, "dtype": dtype})
+            return original_safe_frozen_weight(tensor, device=device, dtype=dtype)
+
+        with mock.patch.object(anima_forward, "_safe_frozen_weight", side_effect=record_safe_frozen_weight):
+            with anima_forward.safe_text_adapter_ops(module), torch.no_grad():
+                output = module(input_tensor, out_dtype=torch.float32)
+
+        self.assertIn({"device": input_tensor.device, "dtype": torch.float32}, calls)
+        self.assertEqual(output.shape, (1, 3, 4))
+
     def test_safe_frozen_model_ops_preserves_grad_through_frozen_linear_and_skips_trainable(self):
         module = FrozenThenTrainable()
         with torch.inference_mode():

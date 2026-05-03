@@ -11,8 +11,8 @@ venv/
 *.ckpt
 *.bin
 *.log
+*ログ.txt
 anima_slider_*.json
-生成ログ.txt
 
 reports/
 cache/
