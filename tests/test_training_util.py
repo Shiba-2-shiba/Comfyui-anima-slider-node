@@ -125,6 +125,26 @@ class TrainingUtilTests(unittest.TestCase):
         self.assertEqual(diagnostics["enabled_lora_modules"], 1)
         self.assertEqual(diagnostics["trainable_lora_parameters"], 2)
 
+    def test_set_lora_parameters_trainable_restores_lora_after_global_freeze(self):
+        model = FakeDiffusion()
+        lora_network.inject_lora_linear_modules(
+            model,
+            include_patterns=["model.diffusion_model.blocks.*.self_attn.*_proj"],
+            exclude_patterns=[],
+            rank=2,
+            alpha=2.0,
+        )
+        for parameter in model.parameters():
+            parameter.requires_grad_(False)
+
+        summary = training.set_lora_parameters_trainable(model, True)
+
+        self.assertEqual(summary["lora_modules"], 1)
+        self.assertEqual(summary["lora_parameters"], 2)
+        diagnostics = training.lora_training_diagnostics(model)
+        self.assertEqual(diagnostics["trainable_lora_parameters"], 2)
+        self.assertFalse(model.diffusion_model.blocks[0].self_attn.q_proj.base.weight.requires_grad)
+
     def test_ensure_trainable_loss_rejects_detached_loss_with_diagnostics(self):
         model = FakeDiffusion()
         lora_network.inject_lora_linear_modules(

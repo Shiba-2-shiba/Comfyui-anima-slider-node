@@ -203,6 +203,25 @@ def build_lora_optimizer_param_groups(
     return list(groups_by_key.values()), list(summaries_by_key.values())
 
 
+def set_lora_parameters_trainable(model: torch.nn.Module, trainable: bool = True) -> dict[str, int]:
+    module_count = 0
+    parameter_count = 0
+    element_count = 0
+    for module in model.modules():
+        if not isinstance(module, lora_network.LoRALinear):
+            continue
+        module_count += 1
+        for parameter in list(module.lora_down.parameters()) + list(module.lora_up.parameters()):
+            parameter.requires_grad_(trainable)
+            parameter_count += 1
+            element_count += parameter.numel()
+    return {
+        "lora_modules": module_count,
+        "lora_parameters": parameter_count,
+        "lora_elements": element_count,
+    }
+
+
 def summarize_injected_lora_ranks(injected) -> list[dict[str, int]]:
     counts = Counter(item.rank for item in injected)
     return [{"rank": rank, "module_count": counts[rank]} for rank in sorted(counts)]
@@ -479,12 +498,6 @@ def train_lora_from_records(model, records: list[AnimaPromptConds], request: Tra
         if not injected:
             raise RuntimeError("No LoRA targets matched the configured include/exclude patterns")
 
-        optimizer_param_groups, optimizer_group_summary = build_lora_optimizer_param_groups(
-            mp.model,
-            fallback_lr=request.lr,
-            reg_lrs=request.reg_lrs,
-        )
-        optimizer = torch.optim.AdamW(optimizer_param_groups, lr=request.lr)
         device = mp.load_device
         image_seq_len = (request.height // 16) * (request.width // 16)
 
@@ -493,6 +506,14 @@ def train_lora_from_records(model, records: list[AnimaPromptConds], request: Tra
         comfy.model_management.load_models_gpu([mp], force_full_load=True)
         materialization_summary = materialize_inference_tensors_for_training(mp.model)
         LOGGER.info("Anima slider training tensor materialization: %s", materialization_summary)
+        lora_trainable_summary = set_lora_parameters_trainable(mp.model, True)
+        LOGGER.info("Anima slider LoRA trainable parameters restored: %s", lora_trainable_summary)
+        optimizer_param_groups, optimizer_group_summary = build_lora_optimizer_param_groups(
+            mp.model,
+            fallback_lr=request.lr,
+            reg_lrs=request.reg_lrs,
+        )
+        optimizer = torch.optim.AdamW(optimizer_param_groups, lr=request.lr)
         LOGGER.info("Anima slider text adapter precompute started: conditions=%s", len(records) * 4)
         with lora_network.lora_enabled(mp.model, False):
             records, text_adapter_summary = anima_forward.precompute_anima_text_adapter_records(mp, records)
@@ -627,6 +648,7 @@ def train_lora_from_records(model, records: list[AnimaPromptConds], request: Tra
             "injected_target_ranks": summarize_injected_lora_ranks(injected),
             "optimizer_param_groups": optimizer_group_summary,
             "comfyui_training_tensor_materialization": materialization_summary,
+            "lora_trainable_parameters": lora_trainable_summary,
             "anima_text_adapter_precompute": text_adapter_summary,
             "num_inference_steps": request.num_inference_steps,
             "scheduler_name": request.scheduler_name,
