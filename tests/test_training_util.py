@@ -39,6 +39,18 @@ class TrainingUtilTests(unittest.TestCase):
     def test_resolve_step_bounds_default_leaves_previous_and_next_sigma(self):
         self.assertEqual(training.resolve_step_bounds(8, None, None), (1, 6))
 
+    def test_progress_log_interval_targets_about_twenty_updates(self):
+        self.assertEqual(training.progress_log_interval(600), 30)
+        self.assertEqual(training.progress_log_interval(3), 1)
+
+    def test_should_log_training_progress_includes_first_interval_and_last(self):
+        interval = training.progress_log_interval(600)
+
+        self.assertTrue(training.should_log_training_progress(1, 600, interval))
+        self.assertTrue(training.should_log_training_progress(30, 600, interval))
+        self.assertTrue(training.should_log_training_progress(600, 600, interval))
+        self.assertFalse(training.should_log_training_progress(29, 600, interval))
+
     def test_choose_training_step_index_shift_stays_in_bounds(self):
         sigmas = torch.tensor([1.0, 0.9, 0.75, 0.5, 0.25, 0.0])
         values = [
@@ -96,6 +108,35 @@ class TrainingUtilTests(unittest.TestCase):
 
         self.assertEqual([group["lr"] for group in groups], [0.00001, 0.0001])
         self.assertEqual([item["module_count"] for item in summary], [1, 1])
+
+    def test_lora_training_diagnostics_counts_trainable_lora_parameters(self):
+        model = FakeDiffusion()
+        lora_network.inject_lora_linear_modules(
+            model,
+            include_patterns=["model.diffusion_model.blocks.*.self_attn.*_proj"],
+            exclude_patterns=[],
+            rank=2,
+            alpha=2.0,
+        )
+
+        diagnostics = training.lora_training_diagnostics(model)
+
+        self.assertEqual(diagnostics["lora_modules"], 1)
+        self.assertEqual(diagnostics["enabled_lora_modules"], 1)
+        self.assertEqual(diagnostics["trainable_lora_parameters"], 2)
+
+    def test_ensure_trainable_loss_rejects_detached_loss_with_diagnostics(self):
+        model = FakeDiffusion()
+        lora_network.inject_lora_linear_modules(
+            model,
+            include_patterns=["model.diffusion_model.blocks.*.self_attn.*_proj"],
+            exclude_patterns=[],
+            rank=2,
+            alpha=2.0,
+        )
+
+        with self.assertRaisesRegex(RuntimeError, "Training loss is detached"):
+            training.ensure_trainable_loss(torch.tensor(1.0), model)
 
     def test_materialize_inference_tensors_allows_autograd_through_frozen_linear(self):
         linear = torch.nn.Linear(3, 4, bias=False)

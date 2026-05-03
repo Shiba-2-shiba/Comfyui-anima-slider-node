@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections import Counter
+from contextlib import nullcontext
 from dataclasses import dataclass
 import logging
 import math
@@ -69,6 +70,18 @@ def validate_indices(indices: list[int], record_count: int, label: str) -> None:
 def validate_anima_resolution(width: int, height: int, step: int = 16):
     if width % step != 0 or height % step != 0:
         raise ValueError(f"Anima training resolution must be divisible by {step}, got {width}x{height}")
+
+
+def progress_log_interval(total_steps: int, target_logs: int = 20) -> int:
+    if total_steps <= 0:
+        raise ValueError("total_steps must be positive")
+    if target_logs <= 0:
+        raise ValueError("target_logs must be positive")
+    return max(1, total_steps // target_logs)
+
+
+def should_log_training_progress(step_number: int, total_steps: int, interval: int) -> bool:
+    return step_number == 1 or step_number == total_steps or step_number % interval == 0
 
 
 def resolve_step_bounds(num_inference_steps: int, min_step_index: int | None, max_step_index: int | None) -> tuple[int, int]:
@@ -275,11 +288,48 @@ def branch_loss_for_teacher(
     lora_multiplier: float,
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     context = torch.enable_grad() if train else torch.no_grad()
-    with context, lora_network.lora_enabled(patcher.model, True), lora_network.lora_multiplier(patcher.model, lora_multiplier):
+    inference_context = torch.inference_mode(False) if train else nullcontext()
+    with inference_context, context, lora_network.lora_enabled(patcher.model, True), lora_network.lora_multiplier(patcher.model, lora_multiplier):
         model_pred = forward_role(patcher, latent, sigma, target_cond)
         raw_loss = F.mse_loss(model_pred.float(), teacher.float())
         loss = raw_loss * loss_weight.to(device=raw_loss.device)
+    if train:
+        ensure_trainable_loss(loss, patcher.model)
     return loss, raw_loss, model_pred
+
+
+def lora_training_diagnostics(model: torch.nn.Module) -> dict[str, int]:
+    module_count = 0
+    enabled_count = 0
+    trainable_parameter_count = 0
+    trainable_element_count = 0
+    for module in model.modules():
+        if not isinstance(module, lora_network.LoRALinear):
+            continue
+        module_count += 1
+        enabled_count += int(module.enabled)
+        for parameter in list(module.lora_down.parameters()) + list(module.lora_up.parameters()):
+            trainable_parameter_count += int(parameter.requires_grad)
+            if parameter.requires_grad:
+                trainable_element_count += parameter.numel()
+    return {
+        "lora_modules": module_count,
+        "enabled_lora_modules": enabled_count,
+        "trainable_lora_parameters": trainable_parameter_count,
+        "trainable_lora_elements": trainable_element_count,
+    }
+
+
+def ensure_trainable_loss(loss: torch.Tensor, model: torch.nn.Module) -> None:
+    if loss.requires_grad:
+        return
+    diagnostics = lora_training_diagnostics(model)
+    raise RuntimeError(
+        "Training loss is detached before backward; LoRA parameters are not connected to this forward pass. "
+        f"Diagnostics: {diagnostics}. "
+        "This usually means the ComfyUI model forward is running under a no-grad/inference path, "
+        "or the selected LoRA target preset does not affect the active Anima forward path."
+    )
 
 
 def build_flow_loss_info(
@@ -443,6 +493,7 @@ def train_lora_from_records(model, records: list[AnimaPromptConds], request: Tra
         comfy.model_management.load_models_gpu([mp], force_full_load=True)
         materialization_summary = materialize_inference_tensors_for_training(mp.model)
         LOGGER.info("Anima slider training tensor materialization: %s", materialization_summary)
+        LOGGER.info("Anima slider text adapter precompute started: conditions=%s", len(records) * 4)
         with lora_network.lora_enabled(mp.model, False):
             records, text_adapter_summary = anima_forward.precompute_anima_text_adapter_records(mp, records)
         LOGGER.info("Anima text adapter precompute: %s", text_adapter_summary)
@@ -461,9 +512,20 @@ def train_lora_from_records(model, records: list[AnimaPromptConds], request: Tra
         step_records = []
         initial_eval = None
         final_eval = None
+        log_interval = progress_log_interval(request.steps)
 
         try:
             mp.pre_run()
+            LOGGER.info(
+                "Anima slider training started: steps=%s, train_prompts=%s, eval_prompts=%s, resolution=%sx%s, device=%s",
+                request.steps,
+                len(train_records),
+                len(eval_records),
+                request.width,
+                request.height,
+                device,
+            )
+            LOGGER.info("Anima slider initial eval started: eval_prompts=%s, eval_steps=%s", len(eval_records), eval_step_indices)
             initial_eval = evaluate_records(
                 mp,
                 eval_records,
@@ -476,6 +538,7 @@ def train_lora_from_records(model, records: list[AnimaPromptConds], request: Tra
                 loss_weighting_scheme=request.loss_weighting_scheme,
                 direction_loss=request.direction_loss,
             )
+            LOGGER.info("Anima slider initial eval complete: mean_loss=%.6g", initial_eval["mean_loss"])
             for step in range(request.steps):
                 record = train_records[step % len(train_records)]
                 step_seed = request.seed + step if request.vary_seed else request.seed
@@ -490,6 +553,15 @@ def train_lora_from_records(model, records: list[AnimaPromptConds], request: Tra
                     discrete_flow_shift=request.discrete_flow_shift,
                     image_seq_len=image_seq_len,
                 )
+                step_number = step + 1
+                if should_log_training_progress(step_number, request.steps, log_interval):
+                    LOGGER.info(
+                        "Anima slider training step started: step %s/%s (%.1f%%), prompt_index=%s",
+                        step_number,
+                        request.steps,
+                        100.0 * step_number / request.steps,
+                        record.prompt_index,
+                    )
                 optimizer.zero_grad(set_to_none=True)
                 loss, info = flow_loss_for_record(
                     mp,
@@ -511,6 +583,15 @@ def train_lora_from_records(model, records: list[AnimaPromptConds], request: Tra
                 step_records.append({"step": step + 1, "prompt_index": record.prompt_index, "seed": step_seed, "loss": loss_value, **info})
                 if progress is not None:
                     progress.update(1)
+                if should_log_training_progress(step_number, request.steps, log_interval):
+                    LOGGER.info(
+                        "Anima slider training progress: step %s/%s (%.1f%%), prompt_index=%s, loss=%.6g",
+                        step_number,
+                        request.steps,
+                        100.0 * step_number / request.steps,
+                        record.prompt_index,
+                        loss_value,
+                    )
 
             final_eval = evaluate_records(
                 mp,
@@ -524,7 +605,9 @@ def train_lora_from_records(model, records: list[AnimaPromptConds], request: Tra
                 loss_weighting_scheme=request.loss_weighting_scheme,
                 direction_loss=request.direction_loss,
             )
+            LOGGER.info("Anima slider final eval complete: mean_loss=%.6g", final_eval["mean_loss"])
             lora_sd = lora_network.lora_state_dict_from_model(mp.model)
+            LOGGER.info("Anima slider training finished: steps=%s, final_loss=%.6g", request.steps, losses[-1] if losses else float("nan"))
         finally:
             mp.cleanup()
 

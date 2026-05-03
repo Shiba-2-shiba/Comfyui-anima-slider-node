@@ -280,7 +280,7 @@ def safe_text_adapter_ops(module: torch.nn.Module):
             child.forward = MethodType(replacement, child)
             counts[key] += 1
 
-    LOGGER.info("Patched Anima text adapter ops for no-grad precompute: %s", counts)
+    LOGGER.debug("Patched Anima text adapter ops for no-grad precompute: %s", counts)
     try:
         yield
     finally:
