@@ -67,6 +67,28 @@ class TrainingUtilTests(unittest.TestCase):
         self.assertIn({"key": "cpu", "count": diagnostics["parameters"]}, diagnostics["devices"])
         self.assertEqual(diagnostics["inference_parameters"], 0)
 
+    def test_promote_model_residency_skips_dynamic_mode(self):
+        model = FakeDiffusion()
+
+        summary = training.promote_model_residency(model, "cpu", "dynamic")
+
+        self.assertFalse(summary["attempted"])
+        self.assertEqual(summary["mode"], "dynamic")
+
+    def test_promote_model_residency_skips_non_cuda_target(self):
+        model = FakeDiffusion()
+
+        summary = training.promote_model_residency(model, "cpu", "prefer_cuda")
+
+        self.assertFalse(summary["attempted"])
+        self.assertIn("target device", summary["reason"])
+
+    def test_promote_model_residency_rejects_unknown_mode(self):
+        model = FakeDiffusion()
+
+        with self.assertRaisesRegex(ValueError, "Unsupported model_residency"):
+            training.promote_model_residency(model, "cpu", "unknown")
+
     def test_choose_training_step_index_shift_stays_in_bounds(self):
         sigmas = torch.tensor([1.0, 0.9, 0.75, 0.5, 0.25, 0.0])
         values = [

@@ -46,6 +46,7 @@ class TrainRequest:
     exclude_patterns: list[str]
     reg_dims: dict[str, int]
     reg_lrs: dict[str, float]
+    model_residency: str
 
 
 def freeze_parameters(model: torch.nn.Module):
@@ -155,6 +156,48 @@ def lora_parameter_placement_diagnostics(model: torch.nn.Module) -> dict[str, ob
         "elements": element_count,
         "devices": _compact_counter(devices),
         "dtypes": _compact_counter(dtypes),
+    }
+
+
+def promote_model_residency(module: torch.nn.Module, device: torch.device | str, mode: str) -> dict[str, object]:
+    target = torch.device(device)
+    if mode not in {"dynamic", "prefer_cuda"}:
+        raise ValueError(f"Unsupported model_residency: {mode!r}")
+    if mode == "dynamic":
+        return {"mode": mode, "attempted": False, "reason": "dynamic residency requested"}
+    if target.type != "cuda":
+        return {"mode": mode, "attempted": False, "reason": f"target device is {target.type}"}
+    if not torch.cuda.is_available():
+        return {"mode": mode, "attempted": False, "reason": "CUDA is not available"}
+
+    started_at = time.perf_counter()
+    before = parameter_placement_diagnostics(module)
+    try:
+        module.to(device=target)
+        torch.cuda.synchronize(target)
+    except RuntimeError as exc:
+        if "out of memory" in str(exc).lower():
+            torch.cuda.empty_cache()
+        return {
+            "mode": mode,
+            "attempted": True,
+            "promoted": False,
+            "elapsed": round(time.perf_counter() - started_at, 3),
+            "error_type": type(exc).__name__,
+            "error": str(exc).splitlines()[0][:500],
+            "before": before,
+            "after": parameter_placement_diagnostics(module),
+            "cuda_memory": cuda_memory_diagnostics(target),
+        }
+
+    return {
+        "mode": mode,
+        "attempted": True,
+        "promoted": True,
+        "elapsed": round(time.perf_counter() - started_at, 3),
+        "before": before,
+        "after": parameter_placement_diagnostics(module),
+        "cuda_memory": cuda_memory_diagnostics(target),
     }
 
 
@@ -460,7 +503,10 @@ def flow_loss_for_record(
     train: bool,
     direction_loss: str = "enhance_only",
 ) -> tuple[torch.Tensor, dict]:
+    total_started_at = time.perf_counter()
+    timings = {}
     device = patcher.load_device
+    started_at = time.perf_counter()
     noise = anima_forward.make_random_latent(
         patcher,
         width=width,
@@ -469,28 +515,40 @@ def flow_loss_for_record(
         seed=seed,
         device=device,
     )
+    timings["noise"] = time.perf_counter() - started_at
     step_index = anima_forward.validate_training_step_index(sigmas, step_index)
+    started_at = time.perf_counter()
     latent = target_trajectory_latent(patcher, noise, sigmas, step_index=step_index, cond=record.conds["target"])
+    timings["target_trajectory"] = time.perf_counter() - started_at
     sigma = sigmas[step_index].reshape(1).repeat(record.batch_size).to(device)
+    started_at = time.perf_counter()
     teacher_parts = compute_flow_teacher_parts(patcher, latent, sigma, record)
+    timings["teacher_parts"] = time.perf_counter() - started_at
     loss_weight = compute_loss_weight_for_sigma(sigma, loss_weighting_scheme).mean().to(device)
 
     if direction_loss == "enhance_only":
         teacher = teacher_from_parts(teacher_parts, eta=eta, action=record.action).detach()
+        started_at = time.perf_counter()
         loss, raw_loss, model_pred = branch_loss_for_teacher(
             patcher, latent, sigma, record.conds["target"], teacher, loss_weight, train=train, lora_multiplier=1.0
         )
-        return loss, build_flow_loss_info(step_index, sigmas, loss_weight, raw_loss, model_pred, teacher_parts, teacher)
+        timings["lora_forward_loss"] = time.perf_counter() - started_at
+        info = build_flow_loss_info(step_index, sigmas, loss_weight, raw_loss, model_pred, teacher_parts, teacher)
+        timings["total_forward"] = time.perf_counter() - total_started_at
+        info["phase_timings"] = {key: round(value, 3) for key, value in timings.items()}
+        return loss, info
 
     if direction_loss == "bidirectional":
         enhance_teacher = teacher_from_parts(teacher_parts, eta=eta, action="enhance").detach()
         erase_teacher = teacher_from_parts(teacher_parts, eta=eta, action="erase").detach()
+        started_at = time.perf_counter()
         enhance_loss, enhance_raw_loss, enhance_model_pred = branch_loss_for_teacher(
             patcher, latent, sigma, record.conds["target"], enhance_teacher, loss_weight, train=train, lora_multiplier=1.0
         )
         erase_loss, erase_raw_loss, erase_model_pred = branch_loss_for_teacher(
             patcher, latent, sigma, record.conds["target"], erase_teacher, loss_weight, train=train, lora_multiplier=-1.0
         )
+        timings["lora_forward_loss"] = time.perf_counter() - started_at
         loss = (enhance_loss + erase_loss) * 0.5
         raw_loss = (enhance_raw_loss + erase_raw_loss) * 0.5
         info = build_flow_loss_info(step_index, sigmas, loss_weight, raw_loss, enhance_model_pred, teacher_parts, enhance_teacher)
@@ -503,6 +561,8 @@ def flow_loss_for_record(
                 "erase_model_pred_norm": tensor_norm(erase_model_pred),
             }
         )
+        timings["total_forward"] = time.perf_counter() - total_started_at
+        info["phase_timings"] = {key: round(value, 3) for key, value in timings.items()}
         return loss, info
     raise ValueError(f"Unsupported direction_loss: {direction_loss!r}")
 
@@ -583,6 +643,10 @@ def train_lora_from_records(model, records: list[AnimaPromptConds], request: Tra
         LOGGER.info("Anima slider training tensor materialization: %s", materialization_summary)
         lora_trainable_summary = set_lora_parameters_trainable(mp.model, True)
         LOGGER.info("Anima slider LoRA trainable parameters restored: %s", lora_trainable_summary)
+        residency_summary = promote_model_residency(mp.model, device, request.model_residency)
+        if residency_summary.get("promoted"):
+            lora_trainable_summary = set_lora_parameters_trainable(mp.model, True)
+        LOGGER.info("Anima slider model residency attempt: %s", residency_summary)
         model_placement_summary = parameter_placement_diagnostics(mp.model)
         lora_placement_summary = lora_parameter_placement_diagnostics(mp.model)
         cuda_memory_after_setup = cuda_memory_diagnostics(device)
@@ -690,8 +754,12 @@ def train_lora_from_records(model, records: list[AnimaPromptConds], request: Tra
                     train=True,
                     direction_loss=request.direction_loss,
                 )
+                backward_started_at = time.perf_counter()
                 loss.backward()
+                info.setdefault("phase_timings", {})["backward"] = round(time.perf_counter() - backward_started_at, 3)
+                optimizer_started_at = time.perf_counter()
                 optimizer.step()
+                info.setdefault("phase_timings", {})["optimizer_step"] = round(time.perf_counter() - optimizer_started_at, 3)
                 loss_value = float(loss.detach().cpu().item())
                 losses.append(loss_value)
                 step_records.append({"step": step + 1, "prompt_index": record.prompt_index, "seed": step_seed, "loss": loss_value, **info})
@@ -703,7 +771,7 @@ def train_lora_from_records(model, records: list[AnimaPromptConds], request: Tra
                     interval_seconds = now - last_progress_log_at
                     interval_steps = max(1, step_number - last_progress_step)
                     LOGGER.info(
-                        "Anima slider training progress: step %s/%s (%.1f%%), prompt_index=%s, loss=%.6g, elapsed=%.1fs, interval=%.1fs, sec_per_step=%.2f, cuda_memory=%s",
+                        "Anima slider training progress: step %s/%s (%.1f%%), prompt_index=%s, loss=%.6g, elapsed=%.1fs, interval=%.1fs, sec_per_step=%.2f, phase_timings=%s, cuda_memory=%s",
                         step_number,
                         request.steps,
                         100.0 * step_number / request.steps,
@@ -712,6 +780,7 @@ def train_lora_from_records(model, records: list[AnimaPromptConds], request: Tra
                         elapsed,
                         interval_seconds,
                         interval_seconds / interval_steps,
+                        info.get("phase_timings", {}),
                         cuda_memory_diagnostics(device),
                     )
                     last_progress_log_at = now
@@ -765,6 +834,7 @@ def train_lora_from_records(model, records: list[AnimaPromptConds], request: Tra
             "optimizer_param_groups": optimizer_group_summary,
             "comfyui_training_tensor_materialization": materialization_summary,
             "lora_trainable_parameters": lora_trainable_summary,
+            "model_residency": residency_summary,
             "model_placement_after_setup": model_placement_summary,
             "lora_placement_after_setup": lora_placement_summary,
             "cuda_memory_after_setup": cuda_memory_after_setup,
