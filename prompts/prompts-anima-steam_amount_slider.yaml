@@ -1,0 +1,72 @@
+- target: anime illustration, adult cook, solo, fully clothed, nonsexual, wide shot, front view, standing in a clean kitchen, cooking pot nearby, clear air
+  positive: anime illustration, adult cook, solo, fully clothed, nonsexual, wide shot, front view, standing in a clean kitchen, cooking pot nearby, clear air, heavy steam, large vapor clouds, dense white steam, visible billowing vapor
+  unconditional: anime illustration, adult cook, solo, fully clothed, nonsexual, wide shot, front view, standing in a clean kitchen, cooking pot nearby, clear air, light steam, faint vapor wisps, small white vapor, mostly clear air
+  neutral: anime illustration, adult cook, solo, fully clothed, nonsexual, wide shot, front view, standing in a clean kitchen, cooking pot nearby, clear air
+  guidance_scale: 2.0
+  action: enhance
+  width: 1152
+  height: 896
+  batch_size: 1
+- target: anime illustration, adult traveler, solo, fully clothed, nonsexual, wide shot, three-quarter view, standing near a hot spring courtyard, stone bath background, clear air
+  positive: anime illustration, adult traveler, solo, fully clothed, nonsexual, wide shot, three-quarter view, standing near a hot spring courtyard, stone bath background, clear air, heavy steam, large vapor clouds, dense white steam, visible billowing vapor
+  unconditional: anime illustration, adult traveler, solo, fully clothed, nonsexual, wide shot, three-quarter view, standing near a hot spring courtyard, stone bath background, clear air, light steam, faint vapor wisps, small white vapor, mostly clear air
+  neutral: anime illustration, adult traveler, solo, fully clothed, nonsexual, wide shot, three-quarter view, standing near a hot spring courtyard, stone bath background, clear air
+  guidance_scale: 2.0
+  action: enhance
+  width: 1152
+  height: 896
+  batch_size: 1
+- target: anime illustration, adult engineer, solo, fully clothed, nonsexual, full body, front view, standing beside a steam pipe system, workshop background, clear air
+  positive: anime illustration, adult engineer, solo, fully clothed, nonsexual, full body, front view, standing beside a steam pipe system, workshop background, clear air, heavy steam, large vapor clouds, dense white steam, visible billowing vapor
+  unconditional: anime illustration, adult engineer, solo, fully clothed, nonsexual, full body, front view, standing beside a steam pipe system, workshop background, clear air, light steam, faint vapor wisps, small white vapor, mostly clear air
+  neutral: anime illustration, adult engineer, solo, fully clothed, nonsexual, full body, front view, standing beside a steam pipe system, workshop background, clear air
+  guidance_scale: 2.0
+  action: enhance
+  width: 1152
+  height: 896
+  batch_size: 1
+- target: anime illustration, adult blacksmith, solo, fully clothed, nonsexual, wide shot, three-quarter view, standing near a forge table, metal workshop background, clear air
+  positive: anime illustration, adult blacksmith, solo, fully clothed, nonsexual, wide shot, three-quarter view, standing near a forge table, metal workshop background, clear air, heavy steam, large vapor clouds, dense white steam, visible billowing vapor
+  unconditional: anime illustration, adult blacksmith, solo, fully clothed, nonsexual, wide shot, three-quarter view, standing near a forge table, metal workshop background, clear air, light steam, faint vapor wisps, small white vapor, mostly clear air
+  neutral: anime illustration, adult blacksmith, solo, fully clothed, nonsexual, wide shot, three-quarter view, standing near a forge table, metal workshop background, clear air
+  guidance_scale: 2.0
+  action: enhance
+  width: 1152
+  height: 896
+  batch_size: 1
+- target: anime illustration, adult mage, solo, fully clothed, nonsexual, full body, front view, standing near a warm alchemy vessel, laboratory background, clear air
+  positive: anime illustration, adult mage, solo, fully clothed, nonsexual, full body, front view, standing near a warm alchemy vessel, laboratory background, clear air, heavy steam, large vapor clouds, dense white steam, visible billowing vapor
+  unconditional: anime illustration, adult mage, solo, fully clothed, nonsexual, full body, front view, standing near a warm alchemy vessel, laboratory background, clear air, light steam, faint vapor wisps, small white vapor, mostly clear air
+  neutral: anime illustration, adult mage, solo, fully clothed, nonsexual, full body, front view, standing near a warm alchemy vessel, laboratory background, clear air
+  guidance_scale: 2.0
+  action: enhance
+  width: 1152
+  height: 896
+  batch_size: 1
+- target: anime illustration, adult traveler, solo, fully clothed, nonsexual, wide shot, three-quarter view, standing near a mountain bathhouse, wooden background, clear air
+  positive: anime illustration, adult traveler, solo, fully clothed, nonsexual, wide shot, three-quarter view, standing near a mountain bathhouse, wooden background, clear air, heavy steam, large vapor clouds, dense white steam, visible billowing vapor
+  unconditional: anime illustration, adult traveler, solo, fully clothed, nonsexual, wide shot, three-quarter view, standing near a mountain bathhouse, wooden background, clear air, light steam, faint vapor wisps, small white vapor, mostly clear air
+  neutral: anime illustration, adult traveler, solo, fully clothed, nonsexual, wide shot, three-quarter view, standing near a mountain bathhouse, wooden background, clear air
+  guidance_scale: 2.0
+  action: enhance
+  width: 1152
+  height: 896
+  batch_size: 1
+- target: anime illustration, adult mechanic, solo, fully clothed, nonsexual, full body, front view, standing in an engine room, pipe background, clear air
+  positive: anime illustration, adult mechanic, solo, fully clothed, nonsexual, full body, front view, standing in an engine room, pipe background, clear air, heavy steam, large vapor clouds, dense white steam, visible billowing vapor
+  unconditional: anime illustration, adult mechanic, solo, fully clothed, nonsexual, full body, front view, standing in an engine room, pipe background, clear air, light steam, faint vapor wisps, small white vapor, mostly clear air
+  neutral: anime illustration, adult mechanic, solo, fully clothed, nonsexual, full body, front view, standing in an engine room, pipe background, clear air
+  guidance_scale: 2.0
+  action: enhance
+  width: 1152
+  height: 896
+  batch_size: 1
+- target: anime illustration, adult cook, solo, fully clothed, nonsexual, wide shot, three-quarter view, standing near a tea kettle, cozy kitchen background, clear air
+  positive: anime illustration, adult cook, solo, fully clothed, nonsexual, wide shot, three-quarter view, standing near a tea kettle, cozy kitchen background, clear air, heavy steam, large vapor clouds, dense white steam, visible billowing vapor
+  unconditional: anime illustration, adult cook, solo, fully clothed, nonsexual, wide shot, three-quarter view, standing near a tea kettle, cozy kitchen background, clear air, light steam, faint vapor wisps, small white vapor, mostly clear air
+  neutral: anime illustration, adult cook, solo, fully clothed, nonsexual, wide shot, three-quarter view, standing near a tea kettle, cozy kitchen background, clear air
+  guidance_scale: 2.0
+  action: enhance
+  width: 1152
+  height: 896
+  batch_size: 1

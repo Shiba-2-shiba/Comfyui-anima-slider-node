@@ -1,0 +1,72 @@
+- target: anime illustration, adult fantasy character, solo, fully clothed, nonsexual, upper body, front view, black hair, medium hair, simple cloak, plain dark background
+  positive: anime illustration, adult fantasy character, solo, fully clothed, nonsexual, upper body, front view, black hair, medium hair, simple cloak, plain dark background, many glowing particles, dense floating motes, abundant light specks, particle-filled air
+  unconditional: anime illustration, adult fantasy character, solo, fully clothed, nonsexual, upper body, front view, black hair, medium hair, simple cloak, plain dark background, few glowing particles, sparse floating motes, minimal light specks, mostly clear air
+  neutral: anime illustration, adult fantasy character, solo, fully clothed, nonsexual, upper body, front view, black hair, medium hair, simple cloak, plain dark background
+  guidance_scale: 2.0
+  action: enhance
+  width: 896
+  height: 1152
+  batch_size: 1
+- target: anime illustration, adult fantasy character, solo, fully clothed, nonsexual, upper body, three-quarter view, brown hair, long hair, simple cloak, plain blue background
+  positive: anime illustration, adult fantasy character, solo, fully clothed, nonsexual, upper body, three-quarter view, brown hair, long hair, simple cloak, plain blue background, many glowing particles, dense floating motes, abundant light specks, particle-filled air
+  unconditional: anime illustration, adult fantasy character, solo, fully clothed, nonsexual, upper body, three-quarter view, brown hair, long hair, simple cloak, plain blue background, few glowing particles, sparse floating motes, minimal light specks, mostly clear air
+  neutral: anime illustration, adult fantasy character, solo, fully clothed, nonsexual, upper body, three-quarter view, brown hair, long hair, simple cloak, plain blue background
+  guidance_scale: 2.0
+  action: enhance
+  width: 896
+  height: 1152
+  batch_size: 1
+- target: anime illustration, adult fantasy character, solo, fully clothed, nonsexual, full body, front view, blonde hair, short hair, simple robe, simple garden background
+  positive: anime illustration, adult fantasy character, solo, fully clothed, nonsexual, full body, front view, blonde hair, short hair, simple robe, simple garden background, many glowing particles, dense floating motes, abundant light specks, particle-filled air
+  unconditional: anime illustration, adult fantasy character, solo, fully clothed, nonsexual, full body, front view, blonde hair, short hair, simple robe, simple garden background, few glowing particles, sparse floating motes, minimal light specks, mostly clear air
+  neutral: anime illustration, adult fantasy character, solo, fully clothed, nonsexual, full body, front view, blonde hair, short hair, simple robe, simple garden background
+  guidance_scale: 2.0
+  action: enhance
+  width: 896
+  height: 1152
+  batch_size: 1
+- target: anime illustration, adult fantasy character, solo, fully clothed, nonsexual, full body, three-quarter view, silver hair, medium hair, simple robe, simple stone background
+  positive: anime illustration, adult fantasy character, solo, fully clothed, nonsexual, full body, three-quarter view, silver hair, medium hair, simple robe, simple stone background, many glowing particles, dense floating motes, abundant light specks, particle-filled air
+  unconditional: anime illustration, adult fantasy character, solo, fully clothed, nonsexual, full body, three-quarter view, silver hair, medium hair, simple robe, simple stone background, few glowing particles, sparse floating motes, minimal light specks, mostly clear air
+  neutral: anime illustration, adult fantasy character, solo, fully clothed, nonsexual, full body, three-quarter view, silver hair, medium hair, simple robe, simple stone background
+  guidance_scale: 2.0
+  action: enhance
+  width: 896
+  height: 1152
+  batch_size: 1
+- target: anime illustration, adult fantasy character, solo, fully clothed, nonsexual, thigh-up, front view, pink hair, long hair, simple outfit, plain studio background
+  positive: anime illustration, adult fantasy character, solo, fully clothed, nonsexual, thigh-up, front view, pink hair, long hair, simple outfit, plain studio background, many glowing particles, dense floating motes, abundant light specks, particle-filled air
+  unconditional: anime illustration, adult fantasy character, solo, fully clothed, nonsexual, thigh-up, front view, pink hair, long hair, simple outfit, plain studio background, few glowing particles, sparse floating motes, minimal light specks, mostly clear air
+  neutral: anime illustration, adult fantasy character, solo, fully clothed, nonsexual, thigh-up, front view, pink hair, long hair, simple outfit, plain studio background
+  guidance_scale: 2.0
+  action: enhance
+  width: 896
+  height: 1152
+  batch_size: 1
+- target: anime illustration, adult fantasy character, solo, fully clothed, nonsexual, thigh-up, three-quarter view, red hair, short hair, simple outfit, plain studio background
+  positive: anime illustration, adult fantasy character, solo, fully clothed, nonsexual, thigh-up, three-quarter view, red hair, short hair, simple outfit, plain studio background, many glowing particles, dense floating motes, abundant light specks, particle-filled air
+  unconditional: anime illustration, adult fantasy character, solo, fully clothed, nonsexual, thigh-up, three-quarter view, red hair, short hair, simple outfit, plain studio background, few glowing particles, sparse floating motes, minimal light specks, mostly clear air
+  neutral: anime illustration, adult fantasy character, solo, fully clothed, nonsexual, thigh-up, three-quarter view, red hair, short hair, simple outfit, plain studio background
+  guidance_scale: 2.0
+  action: enhance
+  width: 896
+  height: 1152
+  batch_size: 1
+- target: anime illustration, adult fantasy character, solo, fully clothed, nonsexual, full body, front view, black hair with blue streaks, long hair, simple cloak, simple night background
+  positive: anime illustration, adult fantasy character, solo, fully clothed, nonsexual, full body, front view, black hair with blue streaks, long hair, simple cloak, simple night background, many glowing particles, dense floating motes, abundant light specks, particle-filled air
+  unconditional: anime illustration, adult fantasy character, solo, fully clothed, nonsexual, full body, front view, black hair with blue streaks, long hair, simple cloak, simple night background, few glowing particles, sparse floating motes, minimal light specks, mostly clear air
+  neutral: anime illustration, adult fantasy character, solo, fully clothed, nonsexual, full body, front view, black hair with blue streaks, long hair, simple cloak, simple night background
+  guidance_scale: 2.0
+  action: enhance
+  width: 896
+  height: 1152
+  batch_size: 1
+- target: anime illustration, adult fantasy character, solo, fully clothed, nonsexual, upper body, three-quarter view, brown hair, medium hair, simple cloak, simple twilight background
+  positive: anime illustration, adult fantasy character, solo, fully clothed, nonsexual, upper body, three-quarter view, brown hair, medium hair, simple cloak, simple twilight background, many glowing particles, dense floating motes, abundant light specks, particle-filled air
+  unconditional: anime illustration, adult fantasy character, solo, fully clothed, nonsexual, upper body, three-quarter view, brown hair, medium hair, simple cloak, simple twilight background, few glowing particles, sparse floating motes, minimal light specks, mostly clear air
+  neutral: anime illustration, adult fantasy character, solo, fully clothed, nonsexual, upper body, three-quarter view, brown hair, medium hair, simple cloak, simple twilight background
+  guidance_scale: 2.0
+  action: enhance
+  width: 896
+  height: 1152
+  batch_size: 1

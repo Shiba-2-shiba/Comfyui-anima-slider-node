@@ -1,0 +1,72 @@
+- target: anime illustration, adult adventurer, solo, fully clothed, nonsexual, wide shot, front view, standing at safe distance, rocky field, fantasy action background, clear sky
+  positive: anime illustration, adult adventurer, solo, fully clothed, nonsexual, wide shot, front view, standing at safe distance, rocky field, fantasy action background, clear sky, many flying debris, scattered fragments, broken stones, dense debris field
+  unconditional: anime illustration, adult adventurer, solo, fully clothed, nonsexual, wide shot, front view, standing at safe distance, rocky field, fantasy action background, clear sky, few small fragments, sparse debris, mostly clear ground, minimal debris field
+  neutral: anime illustration, adult adventurer, solo, fully clothed, nonsexual, wide shot, front view, standing at safe distance, rocky field, fantasy action background, clear sky
+  guidance_scale: 2.0
+  action: enhance
+  width: 1152
+  height: 896
+  batch_size: 1
+- target: anime illustration, adult adventurer, solo, fully clothed, nonsexual, wide shot, three-quarter view, standing at safe distance, ruined stone plaza, fantasy action background, cloudy sky
+  positive: anime illustration, adult adventurer, solo, fully clothed, nonsexual, wide shot, three-quarter view, standing at safe distance, ruined stone plaza, fantasy action background, cloudy sky, many flying debris, scattered fragments, broken stones, dense debris field
+  unconditional: anime illustration, adult adventurer, solo, fully clothed, nonsexual, wide shot, three-quarter view, standing at safe distance, ruined stone plaza, fantasy action background, cloudy sky, few small fragments, sparse debris, mostly clear ground, minimal debris field
+  neutral: anime illustration, adult adventurer, solo, fully clothed, nonsexual, wide shot, three-quarter view, standing at safe distance, ruined stone plaza, fantasy action background, cloudy sky
+  guidance_scale: 2.0
+  action: enhance
+  width: 1152
+  height: 896
+  batch_size: 1
+- target: anime illustration, adult adventurer, solo, fully clothed, nonsexual, full body, front view, standing at safe distance, desert canyon, fantasy action background, bright daylight
+  positive: anime illustration, adult adventurer, solo, fully clothed, nonsexual, full body, front view, standing at safe distance, desert canyon, fantasy action background, bright daylight, many flying debris, scattered fragments, broken stones, dense debris field
+  unconditional: anime illustration, adult adventurer, solo, fully clothed, nonsexual, full body, front view, standing at safe distance, desert canyon, fantasy action background, bright daylight, few small fragments, sparse debris, mostly clear ground, minimal debris field
+  neutral: anime illustration, adult adventurer, solo, fully clothed, nonsexual, full body, front view, standing at safe distance, desert canyon, fantasy action background, bright daylight
+  guidance_scale: 2.0
+  action: enhance
+  width: 1152
+  height: 896
+  batch_size: 1
+- target: anime illustration, adult adventurer, solo, fully clothed, nonsexual, wide shot, three-quarter view, standing at safe distance, empty battlefield, fantasy action background, overcast sky
+  positive: anime illustration, adult adventurer, solo, fully clothed, nonsexual, wide shot, three-quarter view, standing at safe distance, empty battlefield, fantasy action background, overcast sky, many flying debris, scattered fragments, broken stones, dense debris field
+  unconditional: anime illustration, adult adventurer, solo, fully clothed, nonsexual, wide shot, three-quarter view, standing at safe distance, empty battlefield, fantasy action background, overcast sky, few small fragments, sparse debris, mostly clear ground, minimal debris field
+  neutral: anime illustration, adult adventurer, solo, fully clothed, nonsexual, wide shot, three-quarter view, standing at safe distance, empty battlefield, fantasy action background, overcast sky
+  guidance_scale: 2.0
+  action: enhance
+  width: 1152
+  height: 896
+  batch_size: 1
+- target: anime illustration, adult adventurer, solo, fully clothed, nonsexual, full body, front view, standing at safe distance, open grassland, fantasy action background, evening light
+  positive: anime illustration, adult adventurer, solo, fully clothed, nonsexual, full body, front view, standing at safe distance, open grassland, fantasy action background, evening light, many flying debris, scattered fragments, broken stones, dense debris field
+  unconditional: anime illustration, adult adventurer, solo, fully clothed, nonsexual, full body, front view, standing at safe distance, open grassland, fantasy action background, evening light, few small fragments, sparse debris, mostly clear ground, minimal debris field
+  neutral: anime illustration, adult adventurer, solo, fully clothed, nonsexual, full body, front view, standing at safe distance, open grassland, fantasy action background, evening light
+  guidance_scale: 2.0
+  action: enhance
+  width: 1152
+  height: 896
+  batch_size: 1
+- target: anime illustration, adult adventurer, solo, fully clothed, nonsexual, wide shot, three-quarter view, standing at safe distance, industrial ruins, fantasy action background, dim sky
+  positive: anime illustration, adult adventurer, solo, fully clothed, nonsexual, wide shot, three-quarter view, standing at safe distance, industrial ruins, fantasy action background, dim sky, many flying debris, scattered fragments, broken stones, dense debris field
+  unconditional: anime illustration, adult adventurer, solo, fully clothed, nonsexual, wide shot, three-quarter view, standing at safe distance, industrial ruins, fantasy action background, dim sky, few small fragments, sparse debris, mostly clear ground, minimal debris field
+  neutral: anime illustration, adult adventurer, solo, fully clothed, nonsexual, wide shot, three-quarter view, standing at safe distance, industrial ruins, fantasy action background, dim sky
+  guidance_scale: 2.0
+  action: enhance
+  width: 1152
+  height: 896
+  batch_size: 1
+- target: anime illustration, adult adventurer, solo, fully clothed, nonsexual, full body, front view, standing at safe distance, barren plain, fantasy action background, distant horizon
+  positive: anime illustration, adult adventurer, solo, fully clothed, nonsexual, full body, front view, standing at safe distance, barren plain, fantasy action background, distant horizon, many flying debris, scattered fragments, broken stones, dense debris field
+  unconditional: anime illustration, adult adventurer, solo, fully clothed, nonsexual, full body, front view, standing at safe distance, barren plain, fantasy action background, distant horizon, few small fragments, sparse debris, mostly clear ground, minimal debris field
+  neutral: anime illustration, adult adventurer, solo, fully clothed, nonsexual, full body, front view, standing at safe distance, barren plain, fantasy action background, distant horizon
+  guidance_scale: 2.0
+  action: enhance
+  width: 1152
+  height: 896
+  batch_size: 1
+- target: anime illustration, adult adventurer, solo, fully clothed, nonsexual, wide shot, three-quarter view, standing at safe distance, empty training ground, fantasy action background, blue sky
+  positive: anime illustration, adult adventurer, solo, fully clothed, nonsexual, wide shot, three-quarter view, standing at safe distance, empty training ground, fantasy action background, blue sky, many flying debris, scattered fragments, broken stones, dense debris field
+  unconditional: anime illustration, adult adventurer, solo, fully clothed, nonsexual, wide shot, three-quarter view, standing at safe distance, empty training ground, fantasy action background, blue sky, few small fragments, sparse debris, mostly clear ground, minimal debris field
+  neutral: anime illustration, adult adventurer, solo, fully clothed, nonsexual, wide shot, three-quarter view, standing at safe distance, empty training ground, fantasy action background, blue sky
+  guidance_scale: 2.0
+  action: enhance
+  width: 1152
+  height: 896
+  batch_size: 1

@@ -1,0 +1,122 @@
+Anima Slider effect YAML validation report
+
+Generated files: 23
+Rules checked: YAML parse, list of 8 mappings, required keys, neutral == target, guidance_scale/action/batch_size, resolution, no obvious low-quality or age-risk terms.
+
+OK: prompts-anima-shockwave_strength_slider.yaml
+  entries: 8
+  resolution: 1152x896
+  positive delta example: strong shockwave, wide expanding pressure ring, visible air distortion, displaced dust
+  unconditional delta example: faint shockwave, narrow pressure ripple, subtle air distortion, calm dust
+OK: prompts-anima-debris_amount_slider.yaml
+  entries: 8
+  resolution: 1152x896
+  positive delta example: many flying debris, scattered fragments, broken stones, dense debris field
+  unconditional delta example: few small fragments, sparse debris, mostly clear ground, minimal debris field
+OK: prompts-anima-dust_cloud_density_slider.yaml
+  entries: 8
+  resolution: 1152x896
+  positive delta example: thick dust cloud, dense airborne dust, opaque dirt plume, dusty haze
+  unconditional delta example: thin dust haze, light airborne dust, faint dirt plume, mostly clear air
+OK: prompts-anima-flame_intensity_slider.yaml
+  entries: 8
+  resolution: 1152x896
+  positive delta example: intense roaring flames, tall fire plume, bright burning fire, strong fire glow
+  unconditional delta example: small weak flames, low fire, soft fire glow, gentle burning fire
+OK: prompts-anima-ember_amount_slider.yaml
+  entries: 8
+  resolution: 1152x896
+  positive delta example: many glowing embers, dense flying sparks, scattered ember particles, bright cinders
+  unconditional delta example: few glowing embers, sparse small sparks, minimal ember particles, faint cinders
+OK: prompts-anima-heat_haze_strength_slider.yaml
+  entries: 8
+  resolution: 1152x896
+  positive delta example: strong heat haze, shimmering air distortion, wavering background, visible heat shimmer
+  unconditional delta example: subtle heat haze, slight air shimmer, mostly clear air, stable background
+OK: prompts-anima-smoke_density_slider.yaml
+  entries: 8
+  resolution: 1152x896
+  positive delta example: dense smoke, thick smoke clouds, opaque smoke plume, heavy smoke layers
+  unconditional delta example: thin smoke, light smoke wisps, transparent smoke plume, clear air
+OK: prompts-anima-fog_density_slider.yaml
+  entries: 8
+  resolution: 1152x896
+  positive delta example: dense fog, thick mist, obscured distance, soft foggy atmosphere
+  unconditional delta example: light fog, thin mist, clear distance, crisp atmosphere
+OK: prompts-anima-steam_amount_slider.yaml
+  entries: 8
+  resolution: 1152x896
+  positive delta example: heavy steam, large vapor clouds, dense white steam, visible billowing vapor
+  unconditional delta example: light steam, faint vapor wisps, small white vapor, mostly clear air
+OK: prompts-anima-electric_arc_intensity_slider.yaml
+  entries: 8
+  resolution: 896x1152
+  positive delta example: intense electric arcs, bright lightning bolts, branching electricity, strong electric glow
+  unconditional delta example: faint electric arcs, weak lightning traces, small electric sparks, soft electric glow
+OK: prompts-anima-spark_amount_slider.yaml
+  entries: 8
+  resolution: 896x1152
+  positive delta example: many bright sparks, scattered electric sparks, dense spark particles, glowing spark shower
+  unconditional delta example: few small sparks, sparse electric sparks, minimal spark particles, faint spark shower
+OK: prompts-anima-energy_aura_intensity_slider.yaml
+  entries: 8
+  resolution: 896x1152
+  positive delta example: strong glowing energy aura, radiant energy field, bright aura edges, intense power glow
+  unconditional delta example: faint energy aura, subtle energy field, soft aura edges, weak power glow
+OK: prompts-anima-aura_intensity_slider.yaml
+  entries: 8
+  resolution: 896x1152
+  positive delta example: strong luminous aura, radiant glow around body, bright aura field, intense aura light
+  unconditional delta example: faint luminous aura, subtle glow around body, soft aura field, gentle aura light
+OK: prompts-anima-particle_amount_slider.yaml
+  entries: 8
+  resolution: 896x1152
+  positive delta example: many glowing particles, dense floating motes, abundant light specks, particle-filled air
+  unconditional delta example: few glowing particles, sparse floating motes, minimal light specks, mostly clear air
+OK: prompts-anima-magic_glow_intensity_slider.yaml
+  entries: 8
+  resolution: 896x1152
+  positive delta example: bright magical glow, luminous spell light, intense magic radiance, glowing magical highlights
+  unconditional delta example: soft magical glow, dim spell light, gentle magic radiance, subtle magical highlights
+OK: prompts-anima-water_splash_intensity_slider.yaml
+  entries: 8
+  resolution: 1152x896
+  positive delta example: large water splash, dynamic splashing water, high spray arc, energetic water burst
+  unconditional delta example: small water splash, gentle splashing water, low spray arc, soft water burst
+OK: prompts-anima-rain_intensity_slider.yaml
+  entries: 8
+  resolution: 1152x896
+  positive delta example: heavy rain, dense rainfall, strong rain streaks, wet rainy atmosphere
+  unconditional delta example: light rain, sparse raindrops, soft rain streaks, gentle rainy atmosphere
+OK: prompts-anima-droplet_amount_slider.yaml
+  entries: 8
+  resolution: 1152x896
+  positive delta example: many water droplets, scattered droplets, dense airborne droplets, sparkling wet particles
+  unconditional delta example: few water droplets, sparse droplets, minimal airborne droplets, subtle wet particles
+OK: prompts-anima-motion_line_intensity_slider.yaml
+  entries: 8
+  resolution: 1152x896
+  positive delta example: strong motion lines, dynamic speed lines, bold movement streaks, energetic action lines
+  unconditional delta example: subtle motion lines, few speed lines, light movement streaks, gentle action lines
+OK: prompts-anima-slash_trail_intensity_slider.yaml
+  entries: 8
+  resolution: 1152x896
+  positive delta example: bright slash trail, long energy slash, strong glowing arc, dramatic trailing light
+  unconditional delta example: faint slash trail, short energy slash, soft glowing arc, subtle trailing light
+OK: prompts-anima-impact_line_density_slider.yaml
+  entries: 8
+  resolution: 1152x896
+  positive delta example: dense impact lines, dramatic radial lines, strong focus lines, bold comic emphasis
+  unconditional delta example: sparse impact lines, subtle radial lines, few focus lines, light comic emphasis
+OK: prompts-anima-laser_beam_intensity_slider.yaml
+  entries: 8
+  resolution: 1152x896
+  positive delta example: bright laser beam, intense energy beam, strong beam glow, luminous beam core
+  unconditional delta example: faint laser beam, weak energy beam, soft beam glow, dim beam core
+OK: prompts-anima-beam_thickness_slider.yaml
+  entries: 8
+  resolution: 1152x896
+  positive delta example: thick energy beam, wide laser beam, broad luminous beam, large beam width
+  unconditional delta example: thin energy beam, narrow laser beam, slim luminous beam, small beam width
+
+All checks passed.

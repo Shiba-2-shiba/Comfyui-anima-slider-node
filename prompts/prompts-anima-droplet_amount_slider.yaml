@@ -1,0 +1,72 @@
+- target: anime illustration, adult traveler, solo, fully clothed, nonsexual, wide shot, front view, standing near a fountain, town square background, clear air
+  positive: anime illustration, adult traveler, solo, fully clothed, nonsexual, wide shot, front view, standing near a fountain, town square background, clear air, many water droplets, scattered droplets, dense airborne droplets, sparkling wet particles
+  unconditional: anime illustration, adult traveler, solo, fully clothed, nonsexual, wide shot, front view, standing near a fountain, town square background, clear air, few water droplets, sparse droplets, minimal airborne droplets, subtle wet particles
+  neutral: anime illustration, adult traveler, solo, fully clothed, nonsexual, wide shot, front view, standing near a fountain, town square background, clear air
+  guidance_scale: 2.0
+  action: enhance
+  width: 1152
+  height: 896
+  batch_size: 1
+- target: anime illustration, adult traveler, solo, fully clothed, nonsexual, wide shot, three-quarter view, standing beside a stream, forest background, clear air
+  positive: anime illustration, adult traveler, solo, fully clothed, nonsexual, wide shot, three-quarter view, standing beside a stream, forest background, clear air, many water droplets, scattered droplets, dense airborne droplets, sparkling wet particles
+  unconditional: anime illustration, adult traveler, solo, fully clothed, nonsexual, wide shot, three-quarter view, standing beside a stream, forest background, clear air, few water droplets, sparse droplets, minimal airborne droplets, subtle wet particles
+  neutral: anime illustration, adult traveler, solo, fully clothed, nonsexual, wide shot, three-quarter view, standing beside a stream, forest background, clear air
+  guidance_scale: 2.0
+  action: enhance
+  width: 1152
+  height: 896
+  batch_size: 1
+- target: anime illustration, adult adventurer, solo, fully clothed, nonsexual, full body, front view, standing near ocean rocks, coastal background, clear air
+  positive: anime illustration, adult adventurer, solo, fully clothed, nonsexual, full body, front view, standing near ocean rocks, coastal background, clear air, many water droplets, scattered droplets, dense airborne droplets, sparkling wet particles
+  unconditional: anime illustration, adult adventurer, solo, fully clothed, nonsexual, full body, front view, standing near ocean rocks, coastal background, clear air, few water droplets, sparse droplets, minimal airborne droplets, subtle wet particles
+  neutral: anime illustration, adult adventurer, solo, fully clothed, nonsexual, full body, front view, standing near ocean rocks, coastal background, clear air
+  guidance_scale: 2.0
+  action: enhance
+  width: 1152
+  height: 896
+  batch_size: 1
+- target: anime illustration, adult ranger, solo, fully clothed, nonsexual, wide shot, three-quarter view, standing near a garden pond, garden background, clear air
+  positive: anime illustration, adult ranger, solo, fully clothed, nonsexual, wide shot, three-quarter view, standing near a garden pond, garden background, clear air, many water droplets, scattered droplets, dense airborne droplets, sparkling wet particles
+  unconditional: anime illustration, adult ranger, solo, fully clothed, nonsexual, wide shot, three-quarter view, standing near a garden pond, garden background, clear air, few water droplets, sparse droplets, minimal airborne droplets, subtle wet particles
+  neutral: anime illustration, adult ranger, solo, fully clothed, nonsexual, wide shot, three-quarter view, standing near a garden pond, garden background, clear air
+  guidance_scale: 2.0
+  action: enhance
+  width: 1152
+  height: 896
+  batch_size: 1
+- target: anime illustration, adult mage, solo, fully clothed, nonsexual, full body, front view, standing in a water garden, simple background, clear air
+  positive: anime illustration, adult mage, solo, fully clothed, nonsexual, full body, front view, standing in a water garden, simple background, clear air, many water droplets, scattered droplets, dense airborne droplets, sparkling wet particles
+  unconditional: anime illustration, adult mage, solo, fully clothed, nonsexual, full body, front view, standing in a water garden, simple background, clear air, few water droplets, sparse droplets, minimal airborne droplets, subtle wet particles
+  neutral: anime illustration, adult mage, solo, fully clothed, nonsexual, full body, front view, standing in a water garden, simple background, clear air
+  guidance_scale: 2.0
+  action: enhance
+  width: 1152
+  height: 896
+  batch_size: 1
+- target: anime illustration, adult traveler, solo, fully clothed, nonsexual, wide shot, three-quarter view, standing near a small waterfall, nature background, clear air
+  positive: anime illustration, adult traveler, solo, fully clothed, nonsexual, wide shot, three-quarter view, standing near a small waterfall, nature background, clear air, many water droplets, scattered droplets, dense airborne droplets, sparkling wet particles
+  unconditional: anime illustration, adult traveler, solo, fully clothed, nonsexual, wide shot, three-quarter view, standing near a small waterfall, nature background, clear air, few water droplets, sparse droplets, minimal airborne droplets, subtle wet particles
+  neutral: anime illustration, adult traveler, solo, fully clothed, nonsexual, wide shot, three-quarter view, standing near a small waterfall, nature background, clear air
+  guidance_scale: 2.0
+  action: enhance
+  width: 1152
+  height: 896
+  batch_size: 1
+- target: anime illustration, adult adventurer, solo, fully clothed, nonsexual, full body, front view, standing near a riverbank, mountain background, clear air
+  positive: anime illustration, adult adventurer, solo, fully clothed, nonsexual, full body, front view, standing near a riverbank, mountain background, clear air, many water droplets, scattered droplets, dense airborne droplets, sparkling wet particles
+  unconditional: anime illustration, adult adventurer, solo, fully clothed, nonsexual, full body, front view, standing near a riverbank, mountain background, clear air, few water droplets, sparse droplets, minimal airborne droplets, subtle wet particles
+  neutral: anime illustration, adult adventurer, solo, fully clothed, nonsexual, full body, front view, standing near a riverbank, mountain background, clear air
+  guidance_scale: 2.0
+  action: enhance
+  width: 1152
+  height: 896
+  batch_size: 1
+- target: anime illustration, adult traveler, solo, fully clothed, nonsexual, wide shot, three-quarter view, standing near a harbor pier, water background, clear air
+  positive: anime illustration, adult traveler, solo, fully clothed, nonsexual, wide shot, three-quarter view, standing near a harbor pier, water background, clear air, many water droplets, scattered droplets, dense airborne droplets, sparkling wet particles
+  unconditional: anime illustration, adult traveler, solo, fully clothed, nonsexual, wide shot, three-quarter view, standing near a harbor pier, water background, clear air, few water droplets, sparse droplets, minimal airborne droplets, subtle wet particles
+  neutral: anime illustration, adult traveler, solo, fully clothed, nonsexual, wide shot, three-quarter view, standing near a harbor pier, water background, clear air
+  guidance_scale: 2.0
+  action: enhance
+  width: 1152
+  height: 896
+  batch_size: 1

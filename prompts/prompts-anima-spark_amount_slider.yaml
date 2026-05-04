@@ -1,0 +1,72 @@
+- target: anime illustration, adult fantasy mage, solo, fully clothed, nonsexual, upper body, front view, black hair, medium hair, simple robe, plain studio background
+  positive: anime illustration, adult fantasy mage, solo, fully clothed, nonsexual, upper body, front view, black hair, medium hair, simple robe, plain studio background, many bright sparks, scattered electric sparks, dense spark particles, glowing spark shower
+  unconditional: anime illustration, adult fantasy mage, solo, fully clothed, nonsexual, upper body, front view, black hair, medium hair, simple robe, plain studio background, few small sparks, sparse electric sparks, minimal spark particles, faint spark shower
+  neutral: anime illustration, adult fantasy mage, solo, fully clothed, nonsexual, upper body, front view, black hair, medium hair, simple robe, plain studio background
+  guidance_scale: 2.0
+  action: enhance
+  width: 896
+  height: 1152
+  batch_size: 1
+- target: anime illustration, adult fantasy mage, solo, fully clothed, nonsexual, upper body, three-quarter view, brown hair, long hair, simple robe, plain studio background
+  positive: anime illustration, adult fantasy mage, solo, fully clothed, nonsexual, upper body, three-quarter view, brown hair, long hair, simple robe, plain studio background, many bright sparks, scattered electric sparks, dense spark particles, glowing spark shower
+  unconditional: anime illustration, adult fantasy mage, solo, fully clothed, nonsexual, upper body, three-quarter view, brown hair, long hair, simple robe, plain studio background, few small sparks, sparse electric sparks, minimal spark particles, faint spark shower
+  neutral: anime illustration, adult fantasy mage, solo, fully clothed, nonsexual, upper body, three-quarter view, brown hair, long hair, simple robe, plain studio background
+  guidance_scale: 2.0
+  action: enhance
+  width: 896
+  height: 1152
+  batch_size: 1
+- target: anime illustration, adult fantasy mage, solo, fully clothed, nonsexual, full body, front view, blonde hair, short hair, simple cloak, simple training room background
+  positive: anime illustration, adult fantasy mage, solo, fully clothed, nonsexual, full body, front view, blonde hair, short hair, simple cloak, simple training room background, many bright sparks, scattered electric sparks, dense spark particles, glowing spark shower
+  unconditional: anime illustration, adult fantasy mage, solo, fully clothed, nonsexual, full body, front view, blonde hair, short hair, simple cloak, simple training room background, few small sparks, sparse electric sparks, minimal spark particles, faint spark shower
+  neutral: anime illustration, adult fantasy mage, solo, fully clothed, nonsexual, full body, front view, blonde hair, short hair, simple cloak, simple training room background
+  guidance_scale: 2.0
+  action: enhance
+  width: 896
+  height: 1152
+  batch_size: 1
+- target: anime illustration, adult fantasy mage, solo, fully clothed, nonsexual, full body, three-quarter view, silver hair, medium hair, simple cloak, simple training room background
+  positive: anime illustration, adult fantasy mage, solo, fully clothed, nonsexual, full body, three-quarter view, silver hair, medium hair, simple cloak, simple training room background, many bright sparks, scattered electric sparks, dense spark particles, glowing spark shower
+  unconditional: anime illustration, adult fantasy mage, solo, fully clothed, nonsexual, full body, three-quarter view, silver hair, medium hair, simple cloak, simple training room background, few small sparks, sparse electric sparks, minimal spark particles, faint spark shower
+  neutral: anime illustration, adult fantasy mage, solo, fully clothed, nonsexual, full body, three-quarter view, silver hair, medium hair, simple cloak, simple training room background
+  guidance_scale: 2.0
+  action: enhance
+  width: 896
+  height: 1152
+  batch_size: 1
+- target: anime illustration, adult fantasy mage, solo, fully clothed, nonsexual, thigh-up, front view, pink hair, long hair, simple tunic, plain background
+  positive: anime illustration, adult fantasy mage, solo, fully clothed, nonsexual, thigh-up, front view, pink hair, long hair, simple tunic, plain background, many bright sparks, scattered electric sparks, dense spark particles, glowing spark shower
+  unconditional: anime illustration, adult fantasy mage, solo, fully clothed, nonsexual, thigh-up, front view, pink hair, long hair, simple tunic, plain background, few small sparks, sparse electric sparks, minimal spark particles, faint spark shower
+  neutral: anime illustration, adult fantasy mage, solo, fully clothed, nonsexual, thigh-up, front view, pink hair, long hair, simple tunic, plain background
+  guidance_scale: 2.0
+  action: enhance
+  width: 896
+  height: 1152
+  batch_size: 1
+- target: anime illustration, adult fantasy mage, solo, fully clothed, nonsexual, thigh-up, three-quarter view, red hair, short hair, simple tunic, plain background
+  positive: anime illustration, adult fantasy mage, solo, fully clothed, nonsexual, thigh-up, three-quarter view, red hair, short hair, simple tunic, plain background, many bright sparks, scattered electric sparks, dense spark particles, glowing spark shower
+  unconditional: anime illustration, adult fantasy mage, solo, fully clothed, nonsexual, thigh-up, three-quarter view, red hair, short hair, simple tunic, plain background, few small sparks, sparse electric sparks, minimal spark particles, faint spark shower
+  neutral: anime illustration, adult fantasy mage, solo, fully clothed, nonsexual, thigh-up, three-quarter view, red hair, short hair, simple tunic, plain background
+  guidance_scale: 2.0
+  action: enhance
+  width: 896
+  height: 1152
+  batch_size: 1
+- target: anime illustration, adult fantasy mage, solo, fully clothed, nonsexual, full body, front view, black hair with blue streaks, long hair, simple robe, stone chamber background
+  positive: anime illustration, adult fantasy mage, solo, fully clothed, nonsexual, full body, front view, black hair with blue streaks, long hair, simple robe, stone chamber background, many bright sparks, scattered electric sparks, dense spark particles, glowing spark shower
+  unconditional: anime illustration, adult fantasy mage, solo, fully clothed, nonsexual, full body, front view, black hair with blue streaks, long hair, simple robe, stone chamber background, few small sparks, sparse electric sparks, minimal spark particles, faint spark shower
+  neutral: anime illustration, adult fantasy mage, solo, fully clothed, nonsexual, full body, front view, black hair with blue streaks, long hair, simple robe, stone chamber background
+  guidance_scale: 2.0
+  action: enhance
+  width: 896
+  height: 1152
+  batch_size: 1
+- target: anime illustration, adult fantasy mage, solo, fully clothed, nonsexual, upper body, three-quarter view, brown hair, medium hair, simple robe, stone chamber background
+  positive: anime illustration, adult fantasy mage, solo, fully clothed, nonsexual, upper body, three-quarter view, brown hair, medium hair, simple robe, stone chamber background, many bright sparks, scattered electric sparks, dense spark particles, glowing spark shower
+  unconditional: anime illustration, adult fantasy mage, solo, fully clothed, nonsexual, upper body, three-quarter view, brown hair, medium hair, simple robe, stone chamber background, few small sparks, sparse electric sparks, minimal spark particles, faint spark shower
+  neutral: anime illustration, adult fantasy mage, solo, fully clothed, nonsexual, upper body, three-quarter view, brown hair, medium hair, simple robe, stone chamber background
+  guidance_scale: 2.0
+  action: enhance
+  width: 896
+  height: 1152
+  batch_size: 1
