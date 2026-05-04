@@ -1,0 +1,72 @@
+- target: anime illustration, adult woman, solo, fully clothed, nonsexual, upper body, front view, black hair, medium hair, wearing a collared blouse, plain studio background, collar visible, neutral expression
+  positive: anime illustration, adult woman, solo, fully clothed, nonsexual, upper body, front view, black hair, medium hair, wearing a collared blouse, plain studio background, collar visible, neutral expression, high collar, raised collar, covered neckline, structured collar
+  unconditional: anime illustration, adult woman, solo, fully clothed, nonsexual, upper body, front view, black hair, medium hair, wearing a collared blouse, plain studio background, collar visible, neutral expression, open collar, low collar, relaxed neckline, folded-down collar
+  neutral: anime illustration, adult woman, solo, fully clothed, nonsexual, upper body, front view, black hair, medium hair, wearing a collared blouse, plain studio background, collar visible, neutral expression
+  guidance_scale: 2.0
+  action: enhance
+  width: 896
+  height: 1152
+  batch_size: 1
+- target: anime illustration, adult woman, solo, fully clothed, nonsexual, upper body, three-quarter view, brown hair, long hair, wearing a collared cardigan, simple indoor background, collar visible, neutral expression
+  positive: anime illustration, adult woman, solo, fully clothed, nonsexual, upper body, three-quarter view, brown hair, long hair, wearing a collared cardigan, simple indoor background, collar visible, neutral expression, high collar, raised collar, covered neckline, structured collar
+  unconditional: anime illustration, adult woman, solo, fully clothed, nonsexual, upper body, three-quarter view, brown hair, long hair, wearing a collared cardigan, simple indoor background, collar visible, neutral expression, open collar, low collar, relaxed neckline, folded-down collar
+  neutral: anime illustration, adult woman, solo, fully clothed, nonsexual, upper body, three-quarter view, brown hair, long hair, wearing a collared cardigan, simple indoor background, collar visible, neutral expression
+  guidance_scale: 2.0
+  action: enhance
+  width: 896
+  height: 1152
+  batch_size: 1
+- target: anime illustration, adult woman, solo, fully clothed, nonsexual, waist up, front view, blonde hair, short hair, wearing a jacket with a collar, plain background, collar visible, neutral expression
+  positive: anime illustration, adult woman, solo, fully clothed, nonsexual, waist up, front view, blonde hair, short hair, wearing a jacket with a collar, plain background, collar visible, neutral expression, high collar, raised collar, covered neckline, structured collar
+  unconditional: anime illustration, adult woman, solo, fully clothed, nonsexual, waist up, front view, blonde hair, short hair, wearing a jacket with a collar, plain background, collar visible, neutral expression, open collar, low collar, relaxed neckline, folded-down collar
+  neutral: anime illustration, adult woman, solo, fully clothed, nonsexual, waist up, front view, blonde hair, short hair, wearing a jacket with a collar, plain background, collar visible, neutral expression
+  guidance_scale: 2.0
+  action: enhance
+  width: 896
+  height: 1152
+  batch_size: 1
+- target: anime illustration, adult woman, solo, fully clothed, nonsexual, waist up, three-quarter view, silver hair, medium hair, wearing a collared sweater, simple studio background, collar visible, neutral expression
+  positive: anime illustration, adult woman, solo, fully clothed, nonsexual, waist up, three-quarter view, silver hair, medium hair, wearing a collared sweater, simple studio background, collar visible, neutral expression, high collar, raised collar, covered neckline, structured collar
+  unconditional: anime illustration, adult woman, solo, fully clothed, nonsexual, waist up, three-quarter view, silver hair, medium hair, wearing a collared sweater, simple studio background, collar visible, neutral expression, open collar, low collar, relaxed neckline, folded-down collar
+  neutral: anime illustration, adult woman, solo, fully clothed, nonsexual, waist up, three-quarter view, silver hair, medium hair, wearing a collared sweater, simple studio background, collar visible, neutral expression
+  guidance_scale: 2.0
+  action: enhance
+  width: 896
+  height: 1152
+  batch_size: 1
+- target: anime illustration, adult woman, solo, fully clothed, nonsexual, upper body, front view, pink hair, long hair, wearing a dress with a collar, plain room background, collar visible, neutral expression
+  positive: anime illustration, adult woman, solo, fully clothed, nonsexual, upper body, front view, pink hair, long hair, wearing a dress with a collar, plain room background, collar visible, neutral expression, high collar, raised collar, covered neckline, structured collar
+  unconditional: anime illustration, adult woman, solo, fully clothed, nonsexual, upper body, front view, pink hair, long hair, wearing a dress with a collar, plain room background, collar visible, neutral expression, open collar, low collar, relaxed neckline, folded-down collar
+  neutral: anime illustration, adult woman, solo, fully clothed, nonsexual, upper body, front view, pink hair, long hair, wearing a dress with a collar, plain room background, collar visible, neutral expression
+  guidance_scale: 2.0
+  action: enhance
+  width: 896
+  height: 1152
+  batch_size: 1
+- target: anime illustration, adult woman, solo, fully clothed, nonsexual, upper body, three-quarter view, red hair, short hair, wearing a collared casual top, plain background, collar visible, neutral expression
+  positive: anime illustration, adult woman, solo, fully clothed, nonsexual, upper body, three-quarter view, red hair, short hair, wearing a collared casual top, plain background, collar visible, neutral expression, high collar, raised collar, covered neckline, structured collar
+  unconditional: anime illustration, adult woman, solo, fully clothed, nonsexual, upper body, three-quarter view, red hair, short hair, wearing a collared casual top, plain background, collar visible, neutral expression, open collar, low collar, relaxed neckline, folded-down collar
+  neutral: anime illustration, adult woman, solo, fully clothed, nonsexual, upper body, three-quarter view, red hair, short hair, wearing a collared casual top, plain background, collar visible, neutral expression
+  guidance_scale: 2.0
+  action: enhance
+  width: 896
+  height: 1152
+  batch_size: 1
+- target: anime illustration, adult woman, solo, fully clothed, nonsexual, bust shot, front view, black hair with blue streaks, long hair, wearing a coat with a collar, simple studio background, collar visible, neutral expression
+  positive: anime illustration, adult woman, solo, fully clothed, nonsexual, bust shot, front view, black hair with blue streaks, long hair, wearing a coat with a collar, simple studio background, collar visible, neutral expression, high collar, raised collar, covered neckline, structured collar
+  unconditional: anime illustration, adult woman, solo, fully clothed, nonsexual, bust shot, front view, black hair with blue streaks, long hair, wearing a coat with a collar, simple studio background, collar visible, neutral expression, open collar, low collar, relaxed neckline, folded-down collar
+  neutral: anime illustration, adult woman, solo, fully clothed, nonsexual, bust shot, front view, black hair with blue streaks, long hair, wearing a coat with a collar, simple studio background, collar visible, neutral expression
+  guidance_scale: 2.0
+  action: enhance
+  width: 896
+  height: 1152
+  batch_size: 1
+- target: anime illustration, adult woman, solo, fully clothed, nonsexual, upper body, three-quarter view, brown hair, medium hair, wearing a shirt with a collar, plain studio background, collar visible, neutral expression
+  positive: anime illustration, adult woman, solo, fully clothed, nonsexual, upper body, three-quarter view, brown hair, medium hair, wearing a shirt with a collar, plain studio background, collar visible, neutral expression, high collar, raised collar, covered neckline, structured collar
+  unconditional: anime illustration, adult woman, solo, fully clothed, nonsexual, upper body, three-quarter view, brown hair, medium hair, wearing a shirt with a collar, plain studio background, collar visible, neutral expression, open collar, low collar, relaxed neckline, folded-down collar
+  neutral: anime illustration, adult woman, solo, fully clothed, nonsexual, upper body, three-quarter view, brown hair, medium hair, wearing a shirt with a collar, plain studio background, collar visible, neutral expression
+  guidance_scale: 2.0
+  action: enhance
+  width: 896
+  height: 1152
+  batch_size: 1

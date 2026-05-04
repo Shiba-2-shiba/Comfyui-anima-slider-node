@@ -1,0 +1,72 @@
+- target: anime illustration, adult woman, solo, fully clothed, nonsexual, full body, front view, black hair, medium hair, wearing a skirt outfit, plain studio background, skirt clearly visible, neutral expression
+  positive: anime illustration, adult woman, solo, fully clothed, nonsexual, full body, front view, black hair, medium hair, wearing a skirt outfit, plain studio background, skirt clearly visible, neutral expression, long skirt, ankle-length skirt, extended skirt hem, modest full skirt length
+  unconditional: anime illustration, adult woman, solo, fully clothed, nonsexual, full body, front view, black hair, medium hair, wearing a skirt outfit, plain studio background, skirt clearly visible, neutral expression, short skirt, above-knee skirt, compact skirt hem, practical short skirt length
+  neutral: anime illustration, adult woman, solo, fully clothed, nonsexual, full body, front view, black hair, medium hair, wearing a skirt outfit, plain studio background, skirt clearly visible, neutral expression
+  guidance_scale: 2.0
+  action: enhance
+  width: 896
+  height: 1152
+  batch_size: 1
+- target: anime illustration, adult woman, solo, fully clothed, nonsexual, full body, three-quarter view, brown hair, long hair, wearing a blouse and skirt, simple indoor background, skirt clearly visible, neutral expression
+  positive: anime illustration, adult woman, solo, fully clothed, nonsexual, full body, three-quarter view, brown hair, long hair, wearing a blouse and skirt, simple indoor background, skirt clearly visible, neutral expression, long skirt, ankle-length skirt, extended skirt hem, modest full skirt length
+  unconditional: anime illustration, adult woman, solo, fully clothed, nonsexual, full body, three-quarter view, brown hair, long hair, wearing a blouse and skirt, simple indoor background, skirt clearly visible, neutral expression, short skirt, above-knee skirt, compact skirt hem, practical short skirt length
+  neutral: anime illustration, adult woman, solo, fully clothed, nonsexual, full body, three-quarter view, brown hair, long hair, wearing a blouse and skirt, simple indoor background, skirt clearly visible, neutral expression
+  guidance_scale: 2.0
+  action: enhance
+  width: 896
+  height: 1152
+  batch_size: 1
+- target: anime illustration, adult woman, solo, fully clothed, nonsexual, thigh-up, front view, blonde hair, short hair, wearing a jacket and skirt, plain background, skirt clearly visible, neutral expression
+  positive: anime illustration, adult woman, solo, fully clothed, nonsexual, thigh-up, front view, blonde hair, short hair, wearing a jacket and skirt, plain background, skirt clearly visible, neutral expression, long skirt, ankle-length skirt, extended skirt hem, modest full skirt length
+  unconditional: anime illustration, adult woman, solo, fully clothed, nonsexual, thigh-up, front view, blonde hair, short hair, wearing a jacket and skirt, plain background, skirt clearly visible, neutral expression, short skirt, above-knee skirt, compact skirt hem, practical short skirt length
+  neutral: anime illustration, adult woman, solo, fully clothed, nonsexual, thigh-up, front view, blonde hair, short hair, wearing a jacket and skirt, plain background, skirt clearly visible, neutral expression
+  guidance_scale: 2.0
+  action: enhance
+  width: 896
+  height: 1152
+  batch_size: 1
+- target: anime illustration, adult woman, solo, fully clothed, nonsexual, full body, three-quarter view, silver hair, medium hair, wearing a sweater and skirt, simple studio background, skirt clearly visible, neutral expression
+  positive: anime illustration, adult woman, solo, fully clothed, nonsexual, full body, three-quarter view, silver hair, medium hair, wearing a sweater and skirt, simple studio background, skirt clearly visible, neutral expression, long skirt, ankle-length skirt, extended skirt hem, modest full skirt length
+  unconditional: anime illustration, adult woman, solo, fully clothed, nonsexual, full body, three-quarter view, silver hair, medium hair, wearing a sweater and skirt, simple studio background, skirt clearly visible, neutral expression, short skirt, above-knee skirt, compact skirt hem, practical short skirt length
+  neutral: anime illustration, adult woman, solo, fully clothed, nonsexual, full body, three-quarter view, silver hair, medium hair, wearing a sweater and skirt, simple studio background, skirt clearly visible, neutral expression
+  guidance_scale: 2.0
+  action: enhance
+  width: 896
+  height: 1152
+  batch_size: 1
+- target: anime illustration, adult woman, solo, fully clothed, nonsexual, full body, front view, pink hair, long hair, wearing a dress with a skirt, plain room background, skirt clearly visible, neutral expression
+  positive: anime illustration, adult woman, solo, fully clothed, nonsexual, full body, front view, pink hair, long hair, wearing a dress with a skirt, plain room background, skirt clearly visible, neutral expression, long skirt, ankle-length skirt, extended skirt hem, modest full skirt length
+  unconditional: anime illustration, adult woman, solo, fully clothed, nonsexual, full body, front view, pink hair, long hair, wearing a dress with a skirt, plain room background, skirt clearly visible, neutral expression, short skirt, above-knee skirt, compact skirt hem, practical short skirt length
+  neutral: anime illustration, adult woman, solo, fully clothed, nonsexual, full body, front view, pink hair, long hair, wearing a dress with a skirt, plain room background, skirt clearly visible, neutral expression
+  guidance_scale: 2.0
+  action: enhance
+  width: 896
+  height: 1152
+  batch_size: 1
+- target: anime illustration, adult woman, solo, fully clothed, nonsexual, thigh-up, three-quarter view, red hair, short hair, wearing a pleated skirt outfit, plain background, skirt clearly visible, neutral expression
+  positive: anime illustration, adult woman, solo, fully clothed, nonsexual, thigh-up, three-quarter view, red hair, short hair, wearing a pleated skirt outfit, plain background, skirt clearly visible, neutral expression, long skirt, ankle-length skirt, extended skirt hem, modest full skirt length
+  unconditional: anime illustration, adult woman, solo, fully clothed, nonsexual, thigh-up, three-quarter view, red hair, short hair, wearing a pleated skirt outfit, plain background, skirt clearly visible, neutral expression, short skirt, above-knee skirt, compact skirt hem, practical short skirt length
+  neutral: anime illustration, adult woman, solo, fully clothed, nonsexual, thigh-up, three-quarter view, red hair, short hair, wearing a pleated skirt outfit, plain background, skirt clearly visible, neutral expression
+  guidance_scale: 2.0
+  action: enhance
+  width: 896
+  height: 1152
+  batch_size: 1
+- target: anime illustration, adult woman, solo, fully clothed, nonsexual, full body, front view, black hair with blue streaks, long hair, wearing a coat and skirt, simple studio background, skirt clearly visible, neutral expression
+  positive: anime illustration, adult woman, solo, fully clothed, nonsexual, full body, front view, black hair with blue streaks, long hair, wearing a coat and skirt, simple studio background, skirt clearly visible, neutral expression, long skirt, ankle-length skirt, extended skirt hem, modest full skirt length
+  unconditional: anime illustration, adult woman, solo, fully clothed, nonsexual, full body, front view, black hair with blue streaks, long hair, wearing a coat and skirt, simple studio background, skirt clearly visible, neutral expression, short skirt, above-knee skirt, compact skirt hem, practical short skirt length
+  neutral: anime illustration, adult woman, solo, fully clothed, nonsexual, full body, front view, black hair with blue streaks, long hair, wearing a coat and skirt, simple studio background, skirt clearly visible, neutral expression
+  guidance_scale: 2.0
+  action: enhance
+  width: 896
+  height: 1152
+  batch_size: 1
+- target: anime illustration, adult woman, solo, fully clothed, nonsexual, full body, three-quarter view, brown hair, medium hair, wearing a cardigan and skirt, plain studio background, skirt clearly visible, neutral expression
+  positive: anime illustration, adult woman, solo, fully clothed, nonsexual, full body, three-quarter view, brown hair, medium hair, wearing a cardigan and skirt, plain studio background, skirt clearly visible, neutral expression, long skirt, ankle-length skirt, extended skirt hem, modest full skirt length
+  unconditional: anime illustration, adult woman, solo, fully clothed, nonsexual, full body, three-quarter view, brown hair, medium hair, wearing a cardigan and skirt, plain studio background, skirt clearly visible, neutral expression, short skirt, above-knee skirt, compact skirt hem, practical short skirt length
+  neutral: anime illustration, adult woman, solo, fully clothed, nonsexual, full body, three-quarter view, brown hair, medium hair, wearing a cardigan and skirt, plain studio background, skirt clearly visible, neutral expression
+  guidance_scale: 2.0
+  action: enhance
+  width: 896
+  height: 1152
+  batch_size: 1

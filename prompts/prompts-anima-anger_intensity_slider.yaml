@@ -1,0 +1,72 @@
+- target: anime illustration, adult woman, solo, fully clothed, nonsexual, portrait, front view, black hair, medium hair, hair away from face, wearing a blouse, plain studio background, face visible, looking at viewer
+  positive: anime illustration, adult woman, solo, fully clothed, nonsexual, portrait, front view, black hair, medium hair, hair away from face, wearing a blouse, plain studio background, face visible, looking at viewer, angry expression, intense glare, furrowed eyebrows, tense mouth
+  unconditional: anime illustration, adult woman, solo, fully clothed, nonsexual, portrait, front view, black hair, medium hair, hair away from face, wearing a blouse, plain studio background, face visible, looking at viewer, calm expression, relaxed eyes, soft eyebrows, relaxed mouth
+  neutral: anime illustration, adult woman, solo, fully clothed, nonsexual, portrait, front view, black hair, medium hair, hair away from face, wearing a blouse, plain studio background, face visible, looking at viewer
+  guidance_scale: 2.0
+  action: enhance
+  width: 896
+  height: 1152
+  batch_size: 1
+- target: anime illustration, adult woman, solo, fully clothed, nonsexual, portrait, three-quarter view, brown hair, long hair, side-swept hair, wearing a cardigan, simple indoor background, face visible, looking at viewer
+  positive: anime illustration, adult woman, solo, fully clothed, nonsexual, portrait, three-quarter view, brown hair, long hair, side-swept hair, wearing a cardigan, simple indoor background, face visible, looking at viewer, angry expression, intense glare, furrowed eyebrows, tense mouth
+  unconditional: anime illustration, adult woman, solo, fully clothed, nonsexual, portrait, three-quarter view, brown hair, long hair, side-swept hair, wearing a cardigan, simple indoor background, face visible, looking at viewer, calm expression, relaxed eyes, soft eyebrows, relaxed mouth
+  neutral: anime illustration, adult woman, solo, fully clothed, nonsexual, portrait, three-quarter view, brown hair, long hair, side-swept hair, wearing a cardigan, simple indoor background, face visible, looking at viewer
+  guidance_scale: 2.0
+  action: enhance
+  width: 896
+  height: 1152
+  batch_size: 1
+- target: anime illustration, adult woman, solo, fully clothed, nonsexual, close-up, front view, blonde hair, short hair, hair tucked behind ears, wearing a jacket, plain background, face visible, looking at viewer
+  positive: anime illustration, adult woman, solo, fully clothed, nonsexual, close-up, front view, blonde hair, short hair, hair tucked behind ears, wearing a jacket, plain background, face visible, looking at viewer, angry expression, intense glare, furrowed eyebrows, tense mouth
+  unconditional: anime illustration, adult woman, solo, fully clothed, nonsexual, close-up, front view, blonde hair, short hair, hair tucked behind ears, wearing a jacket, plain background, face visible, looking at viewer, calm expression, relaxed eyes, soft eyebrows, relaxed mouth
+  neutral: anime illustration, adult woman, solo, fully clothed, nonsexual, close-up, front view, blonde hair, short hair, hair tucked behind ears, wearing a jacket, plain background, face visible, looking at viewer
+  guidance_scale: 2.0
+  action: enhance
+  width: 896
+  height: 1152
+  batch_size: 1
+- target: anime illustration, adult woman, solo, fully clothed, nonsexual, close-up, three-quarter view, silver hair, medium hair, hair away from face, wearing a sweater, simple studio background, face visible, looking at viewer
+  positive: anime illustration, adult woman, solo, fully clothed, nonsexual, close-up, three-quarter view, silver hair, medium hair, hair away from face, wearing a sweater, simple studio background, face visible, looking at viewer, angry expression, intense glare, furrowed eyebrows, tense mouth
+  unconditional: anime illustration, adult woman, solo, fully clothed, nonsexual, close-up, three-quarter view, silver hair, medium hair, hair away from face, wearing a sweater, simple studio background, face visible, looking at viewer, calm expression, relaxed eyes, soft eyebrows, relaxed mouth
+  neutral: anime illustration, adult woman, solo, fully clothed, nonsexual, close-up, three-quarter view, silver hair, medium hair, hair away from face, wearing a sweater, simple studio background, face visible, looking at viewer
+  guidance_scale: 2.0
+  action: enhance
+  width: 896
+  height: 1152
+  batch_size: 1
+- target: anime illustration, adult woman, solo, fully clothed, nonsexual, upper body, front view, pink hair, long hair, half-up hairstyle, wearing a dress, plain room background, face visible, looking at viewer
+  positive: anime illustration, adult woman, solo, fully clothed, nonsexual, upper body, front view, pink hair, long hair, half-up hairstyle, wearing a dress, plain room background, face visible, looking at viewer, angry expression, intense glare, furrowed eyebrows, tense mouth
+  unconditional: anime illustration, adult woman, solo, fully clothed, nonsexual, upper body, front view, pink hair, long hair, half-up hairstyle, wearing a dress, plain room background, face visible, looking at viewer, calm expression, relaxed eyes, soft eyebrows, relaxed mouth
+  neutral: anime illustration, adult woman, solo, fully clothed, nonsexual, upper body, front view, pink hair, long hair, half-up hairstyle, wearing a dress, plain room background, face visible, looking at viewer
+  guidance_scale: 2.0
+  action: enhance
+  width: 896
+  height: 1152
+  batch_size: 1
+- target: anime illustration, adult woman, solo, fully clothed, nonsexual, upper body, three-quarter view, red hair, short hair, side-parted hair, wearing a casual top, plain background, face visible, looking at viewer
+  positive: anime illustration, adult woman, solo, fully clothed, nonsexual, upper body, three-quarter view, red hair, short hair, side-parted hair, wearing a casual top, plain background, face visible, looking at viewer, angry expression, intense glare, furrowed eyebrows, tense mouth
+  unconditional: anime illustration, adult woman, solo, fully clothed, nonsexual, upper body, three-quarter view, red hair, short hair, side-parted hair, wearing a casual top, plain background, face visible, looking at viewer, calm expression, relaxed eyes, soft eyebrows, relaxed mouth
+  neutral: anime illustration, adult woman, solo, fully clothed, nonsexual, upper body, three-quarter view, red hair, short hair, side-parted hair, wearing a casual top, plain background, face visible, looking at viewer
+  guidance_scale: 2.0
+  action: enhance
+  width: 896
+  height: 1152
+  batch_size: 1
+- target: anime illustration, adult woman, solo, fully clothed, nonsexual, bust shot, front view, black hair with blue streaks, long hair, hair away from face, wearing a coat, simple studio background, face visible, looking at viewer
+  positive: anime illustration, adult woman, solo, fully clothed, nonsexual, bust shot, front view, black hair with blue streaks, long hair, hair away from face, wearing a coat, simple studio background, face visible, looking at viewer, angry expression, intense glare, furrowed eyebrows, tense mouth
+  unconditional: anime illustration, adult woman, solo, fully clothed, nonsexual, bust shot, front view, black hair with blue streaks, long hair, hair away from face, wearing a coat, simple studio background, face visible, looking at viewer, calm expression, relaxed eyes, soft eyebrows, relaxed mouth
+  neutral: anime illustration, adult woman, solo, fully clothed, nonsexual, bust shot, front view, black hair with blue streaks, long hair, hair away from face, wearing a coat, simple studio background, face visible, looking at viewer
+  guidance_scale: 2.0
+  action: enhance
+  width: 896
+  height: 1152
+  batch_size: 1
+- target: anime illustration, adult woman, solo, fully clothed, nonsexual, portrait, three-quarter view, brown hair, medium hair, hair tucked behind ears, wearing a vest over a shirt, plain studio background, face visible, looking at viewer
+  positive: anime illustration, adult woman, solo, fully clothed, nonsexual, portrait, three-quarter view, brown hair, medium hair, hair tucked behind ears, wearing a vest over a shirt, plain studio background, face visible, looking at viewer, angry expression, intense glare, furrowed eyebrows, tense mouth
+  unconditional: anime illustration, adult woman, solo, fully clothed, nonsexual, portrait, three-quarter view, brown hair, medium hair, hair tucked behind ears, wearing a vest over a shirt, plain studio background, face visible, looking at viewer, calm expression, relaxed eyes, soft eyebrows, relaxed mouth
+  neutral: anime illustration, adult woman, solo, fully clothed, nonsexual, portrait, three-quarter view, brown hair, medium hair, hair tucked behind ears, wearing a vest over a shirt, plain studio background, face visible, looking at viewer
+  guidance_scale: 2.0
+  action: enhance
+  width: 896
+  height: 1152
+  batch_size: 1
