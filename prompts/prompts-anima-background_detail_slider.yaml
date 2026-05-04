@@ -1,0 +1,72 @@
+- target: anime illustration, adult woman, solo, fully clothed, nonsexual, upper body, front view, black hair, medium hair, wearing a blouse, indoor room setting, face visible
+  positive: anime illustration, adult woman, solo, fully clothed, nonsexual, upper body, front view, black hair, medium hair, wearing a blouse, indoor room setting, face visible, detailed background, decorated room, shelves and wall decor, rich environmental details
+  unconditional: anime illustration, adult woman, solo, fully clothed, nonsexual, upper body, front view, black hair, medium hair, wearing a blouse, indoor room setting, face visible, plain background, simple room, uncluttered walls, minimal environmental details
+  neutral: anime illustration, adult woman, solo, fully clothed, nonsexual, upper body, front view, black hair, medium hair, wearing a blouse, indoor room setting, face visible
+  guidance_scale: 2.0
+  action: enhance
+  width: 1152
+  height: 896
+  batch_size: 1
+- target: anime illustration, adult woman, solo, fully clothed, nonsexual, waist up, three-quarter view, brown hair, long hair, wearing a cardigan, outdoor street setting, face visible
+  positive: anime illustration, adult woman, solo, fully clothed, nonsexual, waist up, three-quarter view, brown hair, long hair, wearing a cardigan, outdoor street setting, face visible, detailed background, buildings and signs, rich street details, layered environment
+  unconditional: anime illustration, adult woman, solo, fully clothed, nonsexual, waist up, three-quarter view, brown hair, long hair, wearing a cardigan, outdoor street setting, face visible, plain background, simple outdoor backdrop, minimal buildings, sparse environmental details
+  neutral: anime illustration, adult woman, solo, fully clothed, nonsexual, waist up, three-quarter view, brown hair, long hair, wearing a cardigan, outdoor street setting, face visible
+  guidance_scale: 2.0
+  action: enhance
+  width: 1152
+  height: 896
+  batch_size: 1
+- target: anime illustration, adult woman, solo, fully clothed, nonsexual, upper body, front view, blonde hair, short hair, wearing a jacket, garden setting, face visible
+  positive: anime illustration, adult woman, solo, fully clothed, nonsexual, upper body, front view, blonde hair, short hair, wearing a jacket, garden setting, face visible, detailed background, lush plants, flowers and garden path, rich environmental details
+  unconditional: anime illustration, adult woman, solo, fully clothed, nonsexual, upper body, front view, blonde hair, short hair, wearing a jacket, garden setting, face visible, plain background, simple garden backdrop, sparse plants, minimal environmental details
+  neutral: anime illustration, adult woman, solo, fully clothed, nonsexual, upper body, front view, blonde hair, short hair, wearing a jacket, garden setting, face visible
+  guidance_scale: 2.0
+  action: enhance
+  width: 1152
+  height: 896
+  batch_size: 1
+- target: anime illustration, adult woman, solo, fully clothed, nonsexual, waist up, three-quarter view, silver hair, medium hair, wearing a sweater, cafe interior setting, face visible
+  positive: anime illustration, adult woman, solo, fully clothed, nonsexual, waist up, three-quarter view, silver hair, medium hair, wearing a sweater, cafe interior setting, face visible, detailed background, decorated cafe interior, tables and wall details, rich environmental details
+  unconditional: anime illustration, adult woman, solo, fully clothed, nonsexual, waist up, three-quarter view, silver hair, medium hair, wearing a sweater, cafe interior setting, face visible, plain background, simple cafe backdrop, minimal furnishings, uncluttered environment
+  neutral: anime illustration, adult woman, solo, fully clothed, nonsexual, waist up, three-quarter view, silver hair, medium hair, wearing a sweater, cafe interior setting, face visible
+  guidance_scale: 2.0
+  action: enhance
+  width: 1152
+  height: 896
+  batch_size: 1
+- target: anime illustration, adult woman, solo, fully clothed, nonsexual, upper body, front view, pink hair, long hair, wearing a dress, fantasy corridor setting, face visible
+  positive: anime illustration, adult woman, solo, fully clothed, nonsexual, upper body, front view, pink hair, long hair, wearing a dress, fantasy corridor setting, face visible, detailed background, ornate corridor, arches and lamps, rich architectural details
+  unconditional: anime illustration, adult woman, solo, fully clothed, nonsexual, upper body, front view, pink hair, long hair, wearing a dress, fantasy corridor setting, face visible, plain background, simple corridor backdrop, minimal architectural details, uncluttered environment
+  neutral: anime illustration, adult woman, solo, fully clothed, nonsexual, upper body, front view, pink hair, long hair, wearing a dress, fantasy corridor setting, face visible
+  guidance_scale: 2.0
+  action: enhance
+  width: 1152
+  height: 896
+  batch_size: 1
+- target: anime illustration, adult woman, solo, fully clothed, nonsexual, waist up, three-quarter view, red hair, short hair, wearing a casual top, studio setting, face visible
+  positive: anime illustration, adult woman, solo, fully clothed, nonsexual, waist up, three-quarter view, red hair, short hair, wearing a casual top, studio setting, face visible, detailed background, studio props, backdrop stands and panels, rich environmental details
+  unconditional: anime illustration, adult woman, solo, fully clothed, nonsexual, waist up, three-quarter view, red hair, short hair, wearing a casual top, studio setting, face visible, plain background, simple studio backdrop, empty environment, minimal details
+  neutral: anime illustration, adult woman, solo, fully clothed, nonsexual, waist up, three-quarter view, red hair, short hair, wearing a casual top, studio setting, face visible
+  guidance_scale: 2.0
+  action: enhance
+  width: 1152
+  height: 896
+  batch_size: 1
+- target: anime illustration, adult woman, solo, fully clothed, nonsexual, upper body, front view, black hair with blue streaks, long hair, wearing a coat, bedroom setting, face visible
+  positive: anime illustration, adult woman, solo, fully clothed, nonsexual, upper body, front view, black hair with blue streaks, long hair, wearing a coat, bedroom setting, face visible, detailed background, decorated bedroom, furniture and posters, rich room details
+  unconditional: anime illustration, adult woman, solo, fully clothed, nonsexual, upper body, front view, black hair with blue streaks, long hair, wearing a coat, bedroom setting, face visible, plain background, simple bedroom backdrop, minimal furniture, uncluttered walls
+  neutral: anime illustration, adult woman, solo, fully clothed, nonsexual, upper body, front view, black hair with blue streaks, long hair, wearing a coat, bedroom setting, face visible
+  guidance_scale: 2.0
+  action: enhance
+  width: 1152
+  height: 896
+  batch_size: 1
+- target: anime illustration, adult woman, solo, fully clothed, nonsexual, waist up, three-quarter view, brown hair, medium hair, wearing a vest over a shirt, city park setting, face visible
+  positive: anime illustration, adult woman, solo, fully clothed, nonsexual, waist up, three-quarter view, brown hair, medium hair, wearing a vest over a shirt, city park setting, face visible, detailed background, park benches, pathway and trees, rich environmental details
+  unconditional: anime illustration, adult woman, solo, fully clothed, nonsexual, waist up, three-quarter view, brown hair, medium hair, wearing a vest over a shirt, city park setting, face visible, plain background, simple park backdrop, minimal trees, sparse environmental details
+  neutral: anime illustration, adult woman, solo, fully clothed, nonsexual, waist up, three-quarter view, brown hair, medium hair, wearing a vest over a shirt, city park setting, face visible
+  guidance_scale: 2.0
+  action: enhance
+  width: 1152
+  height: 896
+  batch_size: 1
