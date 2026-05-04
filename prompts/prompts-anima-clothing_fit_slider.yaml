@@ -1,0 +1,72 @@
+- target: "masterpiece, best quality, score_9, score_8, safe, 1girl, adult woman, fully clothed, nonsexual, solo, upper body, front view, black hair, medium hair, long sleeve top, plain gray background"
+  positive: "masterpiece, best quality, score_9, score_8, safe, 1girl, adult woman, fully clothed, nonsexual, solo, upper body, front view, black hair, medium hair, fitted long sleeve top, close-fitting fabric, tailored fit, plain gray background"
+  unconditional: "masterpiece, best quality, score_9, score_8, safe, 1girl, adult woman, fully clothed, nonsexual, solo, upper body, front view, black hair, medium hair, loose long sleeve top, relaxed fabric, oversized fit, plain gray background"
+  neutral: "masterpiece, best quality, score_9, score_8, safe, 1girl, adult woman, fully clothed, nonsexual, solo, upper body, front view, black hair, medium hair, long sleeve top, plain gray background"
+  guidance_scale: 2.0
+  action: enhance
+  width: 896
+  height: 1152
+  batch_size: 1
+- target: "masterpiece, best quality, score_9, score_8, safe, 1girl, adult woman, fully clothed, nonsexual, solo, upper body, three-quarter view, brown hair, long hair, blouse, simple studio background"
+  positive: "masterpiece, best quality, score_9, score_8, safe, 1girl, adult woman, fully clothed, nonsexual, solo, upper body, three-quarter view, brown hair, long hair, fitted blouse, close-fitting fabric, tailored fit, simple studio background"
+  unconditional: "masterpiece, best quality, score_9, score_8, safe, 1girl, adult woman, fully clothed, nonsexual, solo, upper body, three-quarter view, brown hair, long hair, loose blouse, relaxed fabric, oversized fit, simple studio background"
+  neutral: "masterpiece, best quality, score_9, score_8, safe, 1girl, adult woman, fully clothed, nonsexual, solo, upper body, three-quarter view, brown hair, long hair, blouse, simple studio background"
+  guidance_scale: 2.0
+  action: enhance
+  width: 896
+  height: 1152
+  batch_size: 1
+- target: "masterpiece, best quality, score_9, score_8, safe, 1girl, adult woman, fully clothed, nonsexual, solo, waist up, front view, blonde hair, short hair, knit sweater, plain background"
+  positive: "masterpiece, best quality, score_9, score_8, safe, 1girl, adult woman, fully clothed, nonsexual, solo, waist up, front view, blonde hair, short hair, fitted knit sweater, close-fitting fabric, tailored fit, plain background"
+  unconditional: "masterpiece, best quality, score_9, score_8, safe, 1girl, adult woman, fully clothed, nonsexual, solo, waist up, front view, blonde hair, short hair, loose knit sweater, relaxed fabric, oversized fit, plain background"
+  neutral: "masterpiece, best quality, score_9, score_8, safe, 1girl, adult woman, fully clothed, nonsexual, solo, waist up, front view, blonde hair, short hair, knit sweater, plain background"
+  guidance_scale: 2.0
+  action: enhance
+  width: 896
+  height: 1152
+  batch_size: 1
+- target: "masterpiece, best quality, score_9, score_8, safe, 1girl, adult woman, fully clothed, nonsexual, solo, waist up, three-quarter view, silver hair, medium hair, jacket over shirt, clean background"
+  positive: "masterpiece, best quality, score_9, score_8, safe, 1girl, adult woman, fully clothed, nonsexual, solo, waist up, three-quarter view, silver hair, medium hair, fitted jacket over shirt, close-fitting fabric, tailored fit, clean background"
+  unconditional: "masterpiece, best quality, score_9, score_8, safe, 1girl, adult woman, fully clothed, nonsexual, solo, waist up, three-quarter view, silver hair, medium hair, loose jacket over shirt, relaxed fabric, oversized fit, clean background"
+  neutral: "masterpiece, best quality, score_9, score_8, safe, 1girl, adult woman, fully clothed, nonsexual, solo, waist up, three-quarter view, silver hair, medium hair, jacket over shirt, clean background"
+  guidance_scale: 2.0
+  action: enhance
+  width: 896
+  height: 1152
+  batch_size: 1
+- target: "masterpiece, best quality, score_9, score_8, safe, 1girl, adult woman, fully clothed, nonsexual, solo, standing upper body, front view, pink hair, long hair, cardigan, plain background"
+  positive: "masterpiece, best quality, score_9, score_8, safe, 1girl, adult woman, fully clothed, nonsexual, solo, standing upper body, front view, pink hair, long hair, fitted cardigan, close-fitting fabric, tailored fit, plain background"
+  unconditional: "masterpiece, best quality, score_9, score_8, safe, 1girl, adult woman, fully clothed, nonsexual, solo, standing upper body, front view, pink hair, long hair, loose cardigan, relaxed fabric, oversized fit, plain background"
+  neutral: "masterpiece, best quality, score_9, score_8, safe, 1girl, adult woman, fully clothed, nonsexual, solo, standing upper body, front view, pink hair, long hair, cardigan, plain background"
+  guidance_scale: 2.0
+  action: enhance
+  width: 896
+  height: 1152
+  batch_size: 1
+- target: "masterpiece, best quality, score_9, score_8, safe, 1girl, adult woman, fully clothed, nonsexual, solo, standing upper body, three-quarter view, red hair, short hair, ribbed top, neutral background"
+  positive: "masterpiece, best quality, score_9, score_8, safe, 1girl, adult woman, fully clothed, nonsexual, solo, standing upper body, three-quarter view, red hair, short hair, fitted ribbed top, close-fitting fabric, tailored fit, neutral background"
+  unconditional: "masterpiece, best quality, score_9, score_8, safe, 1girl, adult woman, fully clothed, nonsexual, solo, standing upper body, three-quarter view, red hair, short hair, loose ribbed top, relaxed fabric, oversized fit, neutral background"
+  neutral: "masterpiece, best quality, score_9, score_8, safe, 1girl, adult woman, fully clothed, nonsexual, solo, standing upper body, three-quarter view, red hair, short hair, ribbed top, neutral background"
+  guidance_scale: 2.0
+  action: enhance
+  width: 896
+  height: 1152
+  batch_size: 1
+- target: "masterpiece, best quality, score_9, score_8, safe, 1girl, adult woman, fully clothed, nonsexual, solo, seated upper body, front view, black hair with blue streaks, long hair, cardigan dress, plain background"
+  positive: "masterpiece, best quality, score_9, score_8, safe, 1girl, adult woman, fully clothed, nonsexual, solo, seated upper body, front view, black hair with blue streaks, long hair, fitted cardigan dress, close-fitting fabric, tailored fit, plain background"
+  unconditional: "masterpiece, best quality, score_9, score_8, safe, 1girl, adult woman, fully clothed, nonsexual, solo, seated upper body, front view, black hair with blue streaks, long hair, loose cardigan dress, relaxed fabric, oversized fit, plain background"
+  neutral: "masterpiece, best quality, score_9, score_8, safe, 1girl, adult woman, fully clothed, nonsexual, solo, seated upper body, front view, black hair with blue streaks, long hair, cardigan dress, plain background"
+  guidance_scale: 2.0
+  action: enhance
+  width: 896
+  height: 1152
+  batch_size: 1
+- target: "masterpiece, best quality, score_9, score_8, safe, 1girl, adult woman, fully clothed, nonsexual, solo, seated upper body, three-quarter view, brown hair, medium hair, dress shirt, soft studio background"
+  positive: "masterpiece, best quality, score_9, score_8, safe, 1girl, adult woman, fully clothed, nonsexual, solo, seated upper body, three-quarter view, brown hair, medium hair, fitted dress shirt, close-fitting fabric, tailored fit, soft studio background"
+  unconditional: "masterpiece, best quality, score_9, score_8, safe, 1girl, adult woman, fully clothed, nonsexual, solo, seated upper body, three-quarter view, brown hair, medium hair, loose dress shirt, relaxed fabric, oversized fit, soft studio background"
+  neutral: "masterpiece, best quality, score_9, score_8, safe, 1girl, adult woman, fully clothed, nonsexual, solo, seated upper body, three-quarter view, brown hair, medium hair, dress shirt, soft studio background"
+  guidance_scale: 2.0
+  action: enhance
+  width: 896
+  height: 1152
+  batch_size: 1

@@ -1,0 +1,72 @@
+- target: "masterpiece, best quality, score_9, score_8, safe, 1girl, adult woman, fully clothed, nonsexual, solo, portrait, front view, neutral expression, black hair, medium hair, simple blouse, plain gray background"
+  positive: "masterpiece, best quality, score_9, score_8, safe, 1girl, adult woman, fully clothed, nonsexual, solo, portrait, front view, neutral expression, black hair, medium hair, simple blouse, plain gray background, round face, soft cheeks, gentle facial contour"
+  unconditional: "masterpiece, best quality, score_9, score_8, safe, 1girl, adult woman, fully clothed, nonsexual, solo, portrait, front view, neutral expression, black hair, medium hair, simple blouse, plain gray background, angular face, sharp jawline, defined facial contour"
+  neutral: "masterpiece, best quality, score_9, score_8, safe, 1girl, adult woman, fully clothed, nonsexual, solo, portrait, front view, neutral expression, black hair, medium hair, simple blouse, plain gray background"
+  guidance_scale: 2.0
+  action: enhance
+  width: 896
+  height: 1152
+  batch_size: 1
+- target: "masterpiece, best quality, score_9, score_8, safe, 1girl, adult woman, fully clothed, nonsexual, solo, portrait, three-quarter view, neutral expression, brown hair, long hair, simple cardigan, simple studio background"
+  positive: "masterpiece, best quality, score_9, score_8, safe, 1girl, adult woman, fully clothed, nonsexual, solo, portrait, three-quarter view, neutral expression, brown hair, long hair, simple cardigan, simple studio background, round face, soft cheeks, gentle facial contour"
+  unconditional: "masterpiece, best quality, score_9, score_8, safe, 1girl, adult woman, fully clothed, nonsexual, solo, portrait, three-quarter view, neutral expression, brown hair, long hair, simple cardigan, simple studio background, angular face, sharp jawline, defined facial contour"
+  neutral: "masterpiece, best quality, score_9, score_8, safe, 1girl, adult woman, fully clothed, nonsexual, solo, portrait, three-quarter view, neutral expression, brown hair, long hair, simple cardigan, simple studio background"
+  guidance_scale: 2.0
+  action: enhance
+  width: 896
+  height: 1152
+  batch_size: 1
+- target: "masterpiece, best quality, score_9, score_8, safe, 1girl, adult woman, fully clothed, nonsexual, solo, close-up face, front view, neutral expression, blonde hair, short hair, simple shirt collar, plain background"
+  positive: "masterpiece, best quality, score_9, score_8, safe, 1girl, adult woman, fully clothed, nonsexual, solo, close-up face, front view, neutral expression, blonde hair, short hair, simple shirt collar, plain background, round face, soft cheeks, gentle facial contour"
+  unconditional: "masterpiece, best quality, score_9, score_8, safe, 1girl, adult woman, fully clothed, nonsexual, solo, close-up face, front view, neutral expression, blonde hair, short hair, simple shirt collar, plain background, angular face, sharp jawline, defined facial contour"
+  neutral: "masterpiece, best quality, score_9, score_8, safe, 1girl, adult woman, fully clothed, nonsexual, solo, close-up face, front view, neutral expression, blonde hair, short hair, simple shirt collar, plain background"
+  guidance_scale: 2.0
+  action: enhance
+  width: 896
+  height: 1152
+  batch_size: 1
+- target: "masterpiece, best quality, score_9, score_8, safe, 1girl, adult woman, fully clothed, nonsexual, solo, close-up face, three-quarter view, neutral expression, silver hair, medium hair, simple knit collar, clean background"
+  positive: "masterpiece, best quality, score_9, score_8, safe, 1girl, adult woman, fully clothed, nonsexual, solo, close-up face, three-quarter view, neutral expression, silver hair, medium hair, simple knit collar, clean background, round face, soft cheeks, gentle facial contour"
+  unconditional: "masterpiece, best quality, score_9, score_8, safe, 1girl, adult woman, fully clothed, nonsexual, solo, close-up face, three-quarter view, neutral expression, silver hair, medium hair, simple knit collar, clean background, angular face, sharp jawline, defined facial contour"
+  neutral: "masterpiece, best quality, score_9, score_8, safe, 1girl, adult woman, fully clothed, nonsexual, solo, close-up face, three-quarter view, neutral expression, silver hair, medium hair, simple knit collar, clean background"
+  guidance_scale: 2.0
+  action: enhance
+  width: 896
+  height: 1152
+  batch_size: 1
+- target: "masterpiece, best quality, score_9, score_8, safe, 1girl, adult woman, fully clothed, nonsexual, solo, upper body, front view, neutral expression, pink hair, long hair, casual sweater, plain background"
+  positive: "masterpiece, best quality, score_9, score_8, safe, 1girl, adult woman, fully clothed, nonsexual, solo, upper body, front view, neutral expression, pink hair, long hair, casual sweater, plain background, round face, soft cheeks, gentle facial contour"
+  unconditional: "masterpiece, best quality, score_9, score_8, safe, 1girl, adult woman, fully clothed, nonsexual, solo, upper body, front view, neutral expression, pink hair, long hair, casual sweater, plain background, angular face, sharp jawline, defined facial contour"
+  neutral: "masterpiece, best quality, score_9, score_8, safe, 1girl, adult woman, fully clothed, nonsexual, solo, upper body, front view, neutral expression, pink hair, long hair, casual sweater, plain background"
+  guidance_scale: 2.0
+  action: enhance
+  width: 896
+  height: 1152
+  batch_size: 1
+- target: "masterpiece, best quality, score_9, score_8, safe, 1girl, adult woman, fully clothed, nonsexual, solo, upper body, three-quarter view, neutral expression, red hair, short hair, simple jacket, neutral background"
+  positive: "masterpiece, best quality, score_9, score_8, safe, 1girl, adult woman, fully clothed, nonsexual, solo, upper body, three-quarter view, neutral expression, red hair, short hair, simple jacket, neutral background, round face, soft cheeks, gentle facial contour"
+  unconditional: "masterpiece, best quality, score_9, score_8, safe, 1girl, adult woman, fully clothed, nonsexual, solo, upper body, three-quarter view, neutral expression, red hair, short hair, simple jacket, neutral background, angular face, sharp jawline, defined facial contour"
+  neutral: "masterpiece, best quality, score_9, score_8, safe, 1girl, adult woman, fully clothed, nonsexual, solo, upper body, three-quarter view, neutral expression, red hair, short hair, simple jacket, neutral background"
+  guidance_scale: 2.0
+  action: enhance
+  width: 896
+  height: 1152
+  batch_size: 1
+- target: "masterpiece, best quality, score_9, score_8, safe, 1girl, adult woman, fully clothed, nonsexual, solo, bust portrait, front view, neutral expression, black hair with blue streaks, long hair, fitted cardigan, plain background"
+  positive: "masterpiece, best quality, score_9, score_8, safe, 1girl, adult woman, fully clothed, nonsexual, solo, bust portrait, front view, neutral expression, black hair with blue streaks, long hair, fitted cardigan, plain background, round face, soft cheeks, gentle facial contour"
+  unconditional: "masterpiece, best quality, score_9, score_8, safe, 1girl, adult woman, fully clothed, nonsexual, solo, bust portrait, front view, neutral expression, black hair with blue streaks, long hair, fitted cardigan, plain background, angular face, sharp jawline, defined facial contour"
+  neutral: "masterpiece, best quality, score_9, score_8, safe, 1girl, adult woman, fully clothed, nonsexual, solo, bust portrait, front view, neutral expression, black hair with blue streaks, long hair, fitted cardigan, plain background"
+  guidance_scale: 2.0
+  action: enhance
+  width: 896
+  height: 1152
+  batch_size: 1
+- target: "masterpiece, best quality, score_9, score_8, safe, 1girl, adult woman, fully clothed, nonsexual, solo, bust portrait, three-quarter view, neutral expression, brown hair, medium hair, dress shirt, soft studio background"
+  positive: "masterpiece, best quality, score_9, score_8, safe, 1girl, adult woman, fully clothed, nonsexual, solo, bust portrait, three-quarter view, neutral expression, brown hair, medium hair, dress shirt, soft studio background, round face, soft cheeks, gentle facial contour"
+  unconditional: "masterpiece, best quality, score_9, score_8, safe, 1girl, adult woman, fully clothed, nonsexual, solo, bust portrait, three-quarter view, neutral expression, brown hair, medium hair, dress shirt, soft studio background, angular face, sharp jawline, defined facial contour"
+  neutral: "masterpiece, best quality, score_9, score_8, safe, 1girl, adult woman, fully clothed, nonsexual, solo, bust portrait, three-quarter view, neutral expression, brown hair, medium hair, dress shirt, soft studio background"
+  guidance_scale: 2.0
+  action: enhance
+  width: 896
+  height: 1152
+  batch_size: 1

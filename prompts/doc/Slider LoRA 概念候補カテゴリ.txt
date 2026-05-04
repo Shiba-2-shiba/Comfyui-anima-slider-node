@@ -1,0 +1,267 @@
+Slider LoRA 概念候補カテゴリ
+1. 表情・感情系
+
+最も作りやすいカテゴリです。顔の変化として出やすく、portrait / close-up / upper body で評価しやすいです。
+
+候補名	positive 側	unconditional 側	優先度	注意
+smile_intensity_slider	big smile, cheerful expression	neutral expression, relaxed face	高	口の開き slider にならないよう注意
+emotion_valence_slider	bright happy expression, cheerful mood	gloomy expression, melancholic mood	高	怒り・泣き顔を混ぜない
+eye_openness_slider	wide open eyes, alert eyes	half-closed eyes, relaxed eyelids	高	感情を固定する
+eyebrow_angle_slider	arched eyebrows, sharp eyebrows	soft eyebrows, relaxed eyebrows	中	怒り表情に吸着しやすい
+blush_intensity_slider	visible blush, flushed cheeks	clear cheeks, no blush impression	中	恥ずかしさや性的文脈に寄せない
+calm_intensity_slider	calm expression, serene face	tense expression, alert face	中	表情が弱くなりすぎる可能性
+mouth_openness_slider	open mouth, speaking expression	closed mouth, relaxed lips	中	smile と混ざりやすい
+sleepy_expression_slider	sleepy eyes, drowsy expression	awake eyes, alert expression	中	目の開き slider と近い
+
+おすすめ初回候補:
+smile_intensity_slider、eye_openness_slider、emotion_valence_slider
+
+2. 顔パーツ・顔形状系
+
+アニメ系モデルと相性が良いカテゴリです。ただし cute や young に吸着しやすいので、adult face、neutral expression、same hairstyle 的な共通条件を target 側に入れると安定しやすいです。
+
+候補名	positive 側	unconditional 側	優先度	注意
+eye_size_slider	large eyes, big eyes	small eyes, narrow eyes	高	可愛さ・年齢に混ざりやすい
+face_roundness_slider	round face, soft cheeks	angular face, sharp jawline	高	若さ・可愛さに寄る可能性
+jaw_sharpness_slider	sharp jawline, defined facial contour	soft jawline, rounded facial contour	中高	性別印象に混ざる可能性
+cheek_fullness_slider	full cheeks, soft cheeks	slim cheeks, defined cheeks	中	顔の丸さと近い
+nose_prominence_slider	prominent nose, defined nose bridge	small nose, subtle nose	中	アニメモデルでは効きが弱い場合あり
+chin_length_slider	longer chin, defined chin	short chin, soft lower face	中	顔全体の印象が変わりやすい
+facial_softness_slider	soft facial features, gentle face	sharp facial features, defined face	中	抽象的なので分解候補
+mature_face_slider	mature facial features, adult face	soft youthful facial features	低中	年齢方向に寄るため慎重に扱う
+
+おすすめ初回候補:
+eye_size_slider、face_roundness_slider、jaw_sharpness_slider
+
+3. 髪系
+
+タグが強く、効果が出やすいカテゴリです。髪色・髪型・長さ・ボリュームを同時に動かさないことが重要です。
+
+候補名	positive 側	unconditional 側	優先度	注意
+hair_length_slider	long hair	short hair	高	構図によって見え方が変わる
+hair_volume_slider	voluminous hair, fluffy hair	flat hair, sleek hair	高	髪質 slider と混ざりやすい
+hair_messiness_slider	messy hair, tousled hair	neat hair, tidy hair	高	状況描写に吸着しやすい
+hair_curliness_slider	curly hair, wavy hair	straight hair	中高	髪型そのものに寄る可能性
+bangs_amount_slider	heavy bangs, full bangs	forehead visible, swept bangs	中	顔の印象も変わる
+hair_sleekness_slider	sleek hair, smooth hair	fluffy hair, textured hair	中	volume と近い
+ahoge_strength_slider	prominent ahoge, stray hair	neat hair, no stray hair impression	中	キャラ性が強く出る
+hair_symmetry_slider	symmetrical hairstyle	asymmetrical hairstyle	低中	構図・顔向きに混ざる
+
+おすすめ初回候補:
+hair_volume_slider、hair_messiness_slider、hair_length_slider
+
+4. 服装・布の状態系
+
+かなり実用的です。身体そのものより安全に制御しやすく、商業イラスト・キャラデザイン用途でも使いやすいです。服カテゴリを target に置き、positive / unconditional では修飾だけ変えるのが良いです。
+
+候補名	positive 側	unconditional 側	優先度	注意
+clothing_fit_slider	fitted clothing, tailored fit	loose clothing, oversized fit	高	体型 slider にしない
+fabric_weight_slider	thick fabric, heavy fabric	thin fabric, light fabric	高	透け表現に寄せない
+outfit_decoration_slider	ornate outfit, detailed trim	plain outfit, simple design	高	画面密度や品質と混ざる
+outfit_formality_slider	formal outfit, tailored jacket	casual outfit, relaxed clothes	中高	職業・場面に吸着しやすい
+layering_amount_slider	layered outfit, multiple clothing layers	simple outfit, single layer clothing	中高	季節感と混ざる
+sleeve_volume_slider	puffy sleeves, voluminous sleeves	slim sleeves, fitted sleeves	中	服カテゴリを固定した方がよい
+skirt_length_slider	long skirt, ankle-length skirt	short skirt, above-knee skirt	中	sexual 文脈を避ける
+collar_height_slider	high collar, covered neckline	low collar, open neckline	中	露出度 slider に寄る可能性
+
+おすすめ初回候補:
+clothing_fit_slider、fabric_weight_slider、outfit_decoration_slider
+
+5. 身体比率・体型系
+
+実用性は高いですが、顔・年齢・服装・性的文脈に吸着しやすいカテゴリです。全 prompt に adult, fully clothed, nonsexual, solo を入れる前提で扱うのが安全です。
+
+候補名	positive 側	unconditional 側	優先度	注意
+shoulder_width_slider	broad shoulders	narrow shoulders	中高	性別印象に混ざる
+waist_width_slider	narrow waist, slim waistline	wide waist, thick waistline	中高	服のシルエットに吸着しやすい
+muscle_tone_slider	toned body, athletic build	soft body, non-muscular build	中高	ポーズや服装で見え方が変わる
+body_softness_slider	soft body shape, rounded body contours	firm body shape, defined body contours	中	抽象的なので慎重
+bust_size_slider	large breasts, fuller bust	small breasts, slender chest	中	nonsexual / fully clothed 必須
+hip_width_slider	wide hips, fuller hips	narrow hips, slim hips	中	sexual 文脈に寄りやすい
+limb_slenderness_slider	slender arms and legs	sturdy arms and legs	中	全身体型に広がりやすい
+height_proportion_slider	tall body proportions	short body proportions	低中	単体画像では評価が難しい
+
+おすすめ初回候補:
+shoulder_width_slider、waist_width_slider、muscle_tone_slider
+ただし、体型系は表情・髪・服装系より後に検証するのが無難です。
+
+6. ポーズ・姿勢系
+
+便利ですが、構図・カメラ距離・身体比率が動きやすいです。複雑なアクションより、まずは単純な姿勢差分が向いています。
+
+候補名	positive 側	unconditional 側	優先度	注意
+posture_uprightness_slider	upright posture, straight back	slouched posture, hunched shoulders	中高	感情や年齢に混ざる
+pose_dynamism_slider	dynamic pose, action pose	relaxed standing pose, still pose	中	構図変化・破綻が出やすい
+head_tilt_slider	tilted head	straight head position	中	表情や可愛さに寄る
+arm_openness_slider	open arm pose, arms away from body	closed arm pose, arms near body	中	手の破綻に注意
+gesture_intensity_slider	expressive hand gesture	relaxed hands, minimal gesture	中	手の品質に影響しやすい
+sitting_relaxation_slider	relaxed sitting pose	formal sitting pose, upright sitting	低中	椅子・背景が混ざる
+body_twist_slider	twisted torso, dynamic body angle	front-facing torso, straight body	低中	破綻しやすい
+walking_pose_slider	walking pose, stepping forward	standing still pose	低中	足や構図が動く
+
+おすすめ初回候補:
+posture_uprightness_slider、head_tilt_slider、pose_dynamism_slider
+
+7. 背景・環境系
+
+人物属性から分離しやすく、安全に試しやすいカテゴリです。人物条件を強く固定し、背景だけを差分にします。
+
+候補名	positive 側	unconditional 側	優先度	注意
+background_detail_slider	detailed background, decorated room	plain background, simple background	高	人物の描き込み量に波及する可能性
+background_depth_slider	deep perspective background	flat simple background	中高	構図に混ざる
+indoor_outdoor_slider	indoor room	outdoor scenery	中	光・場面が変わりやすい
+urban_nature_slider	urban background, buildings	natural background, trees	中	色調にも影響しやすい
+room_cleanliness_slider	tidy room, organized background	cluttered room, messy background	中	背景 detail と近い
+crowd_density_slider	busy background, many distant people	empty background, no crowd impression	低中	人物数が増えやすい
+environment_scale_slider	wide open environment, expansive space	small enclosed space, compact room	低中	カメラ距離と混ざる
+nature_amount_slider	lush greenery, plants in background	minimal plants, plain background	中	背景カテゴリとしては有用
+
+おすすめ初回候補:
+background_detail_slider、background_depth_slider、room_cleanliness_slider
+
+8. 光・色・画面トーン系
+
+A/B 評価しやすく、実用性も高いです。ただし背景や画風にも影響します。品質差ではなく、同品質の色調差として書くのが重要です。
+
+候補名	positive 側	unconditional 側	優先度	注意
+color_saturation_slider	vivid colors, high saturation	muted colors, low saturation	高	背景色にも効く
+brightness_slider	bright lighting, high key lighting	dim lighting, low key lighting	高	夜景・雰囲気に吸着しやすい
+contrast_slider	high contrast lighting	low contrast lighting, soft contrast	中高	線画や陰影にも影響
+color_temperature_slider	warm color palette, warm lighting	cool color palette, cool lighting	中高	季節・時間帯に寄りやすい
+shadow_softness_slider	soft shadows, diffused lighting	hard shadows, sharp lighting	中	レンダリング系と近い
+rim_light_slider	strong rim light, edge lighting	soft even lighting, no strong rim light	中	構図や背景に依存
+cinematic_lighting_slider	cinematic lighting, dramatic lighting	plain studio lighting, even lighting	中	抽象的で広がりやすい
+pastel_tone_slider	pastel colors, soft color palette	rich colors, bold color palette	中	saturation と近い
+
+おすすめ初回候補:
+color_saturation_slider、brightness_slider、color_temperature_slider
+
+9. 線画・レンダリング・画風系
+
+効果は出やすいですが、モデルの基礎画風を壊すリスクがあります。low quality、bad anatomy、blurry のような低品質語を反対側に入れないことが重要です。
+
+候補名	positive 側	unconditional 側	優先度	注意
+line_weight_slider	bold outlines, thick lineart	thin lineart, delicate outlines	高	画風全体に効く
+shading_complexity_slider	detailed shading, intricate shadows	simple shading, flat shading	中高	品質差に見えやすい
+render_detail_slider	detailed rendering, refined details	simple rendering, minimal details	中	quality slider 化しやすい
+cel_shading_slider	clear cel shading, anime-style shadows	soft blended shading, smooth gradients	中	style slider としては有用
+texture_detail_slider	visible texture, detailed material texture	smooth surfaces, minimal texture	中	服・背景にも効く
+outline_cleanliness_slider	clean lineart, precise outlines	sketchy lineart, rough outlines	中	rough 側が低品質化しやすい
+painterly_softness_slider	soft painterly rendering	crisp anime rendering	中	大きな画風変化になる
+detail_density_slider	dense visual details, intricate elements	simple visual details, minimal elements	中	背景 detail と混ざる
+
+おすすめ初回候補:
+line_weight_slider、shading_complexity_slider、cel_shading_slider
+
+10. キャラクター印象系
+
+cute、beautiful、cool のような印象語をそのまま slider にするのではなく、視覚的な下位概念に分解するカテゴリです。Local LLM には「抽象印象を直接採用せず、視覚部品へ分解する」と教えると安定します。
+
+元のお題	分解後の候補 slider	理由
+かわいい	eye_size_slider, face_roundness_slider, smile_intensity_slider, pastel_tone_slider	年齢方向に流すより安全
+美人	jaw_sharpness_slider, facial_softness_slider, eye_shape_slider, lighting_softness_slider	主観語を顔パーツへ分解
+かっこいい	eyebrow_angle_slider, contrast_slider, posture_uprightness_slider, line_weight_slider	雰囲気・姿勢・線に分解
+上品	outfit_formality_slider, posture_uprightness_slider, color_saturation_slider, background_cleanliness_slider	服装・姿勢・色調で表現
+元気	emotion_valence_slider, pose_dynamism_slider, eye_openness_slider, brightness_slider	感情と動きに分解
+儚い	brightness_slider, color_saturation_slider, soft_lighting_slider, slenderness_slider	抽象度が高いので慎重
+大人っぽい	jaw_sharpness_slider, outfit_formality_slider, posture_uprightness_slider	年齢 slider にしない
+幼い	原則非推奨。必要なら face_roundness_slider, eye_size_slider に分解	未成年方向に流れやすい
+優先して作るとよい候補トップ 20
+
+最初に検証するなら、この順番が現実的です。
+
+優先	候補名	カテゴリ	理由
+1	eye_openness_slider	表情・顔	差分が明確で評価しやすい
+2	smile_intensity_slider	表情・顔	実用性が高く、効果確認が簡単
+3	clothing_fit_slider	服装	身体 slider より安全で有用
+4	hair_volume_slider	髪	アニメモデルで効きやすい
+5	color_saturation_slider	色	A/B 比較が容易
+6	background_detail_slider	背景	人物属性から分離しやすい
+7	line_weight_slider	画風	画風調整として実用性が高い
+8	face_roundness_slider	顔形状	キャラ造形に有用
+9	hair_messiness_slider	髪	clear / messy の差分が作りやすい
+10	fabric_weight_slider	服装	服の質感調整に使える
+11	posture_uprightness_slider	ポーズ	実用的だが少し混ざりやすい
+12	color_temperature_slider	色	warm / cool の差分が明確
+13	jaw_sharpness_slider	顔形状	顔印象調整に有用
+14	outfit_decoration_slider	服装	plain / ornate が見えやすい
+15	shading_complexity_slider	画風	simple / detailed の制御に使える
+16	background_depth_slider	背景	flat / perspective の調整に有用
+17	muscle_tone_slider	身体	使い道は多いが服装依存
+18	waist_width_slider	身体	実用性は高いが混ざりやすい
+19	pose_dynamism_slider	ポーズ	便利だが破綻リスクあり
+20	cel_shading_slider	画風	style slider として有用
+後回し、または分解すべき概念
+
+以下はそのまま作ると失敗しやすいです。
+
+候補	理由	代替案
+cute_slider	年齢、目、顔形状、服装、色調が混ざる	eye_size_slider, face_roundness_slider, smile_intensity_slider
+beautiful_slider	主観的で差分が広い	jaw_sharpness_slider, lighting_softness_slider, facial_softness_slider
+sexy_slider	sexual 文脈に寄りやすい	clothing_fit_slider, posture_slider など非性的な視覚軸へ分解
+young_slider	未成年方向に流れやすい	原則避ける。顔形状・目サイズへ分解
+quality_slider	unconditional が低品質化しやすい	line_weight_slider, shading_complexity_slider, render_detail_slider
+anime_style_slider	広すぎる	line_weight_slider, cel_shading_slider, color_saturation_slider
+cool_slider	抽象的	contrast_slider, eyebrow_angle_slider, posture_uprightness_slider
+camera_distance_slider	通常 prompt / workflow で制御しやすい	LoRA 化の優先度は低い
+md に入れるなら、この分類が使いやすい
+
+Local LLM に提案させる用途なら、候補カテゴリを次のように定義すると安定します。
+
+## Concept categories
+
+Use these categories when proposing new Slider LoRA concepts.
+
+1. Expression sliders
+   - Best for first experiments.
+   - Use portrait, close-up, upper body.
+   - Keep hairstyle, outfit, background fixed.
+   - Examples: smile_intensity, eye_openness, emotion_valence.
+
+2. Face shape sliders
+   - Useful for character design.
+   - Avoid age-related wording.
+   - Use adult, neutral expression, hair away from face when needed.
+   - Examples: eye_size, face_roundness, jaw_sharpness.
+
+3. Hair sliders
+   - Usually effective because hair tags are strong.
+   - Do not mix hair color, length, curliness, and volume in one slider.
+   - Examples: hair_length, hair_volume, hair_messiness.
+
+4. Clothing and fabric sliders
+   - Practical and safer than body sliders.
+   - Put clothing category in target; change only modifiers in positive/unconditional.
+   - Examples: clothing_fit, fabric_weight, outfit_decoration.
+
+5. Body proportion sliders
+   - Useful but higher risk.
+   - Always use adult, fully clothed, nonsexual, solo.
+   - Examples: shoulder_width, waist_width, muscle_tone.
+
+6. Pose and posture sliders
+   - Useful but can alter composition.
+   - Start with simple posture differences before action poses.
+   - Examples: posture_uprightness, head_tilt, pose_dynamism.
+
+7. Background sliders
+   - Good for safe experiments.
+   - Keep the character prompt fixed and change only background terms.
+   - Examples: background_detail, background_depth, indoor_outdoor.
+
+8. Color and lighting sliders
+   - Easy to evaluate visually.
+   - Do not make one side low quality.
+   - Examples: color_saturation, brightness, color_temperature.
+
+9. Lineart and rendering sliders
+   - Useful for style control.
+   - Avoid low quality, bad anatomy, blurry as the opposite side.
+   - Examples: line_weight, shading_complexity, cel_shading.
+
+10. Abstract impression sliders
+   - Do not use directly.
+   - Decompose cute, beautiful, cool, elegant, mature into visible sub-concepts.
+
+結論としては、最初に充実させるべきカテゴリは 表情・顔パーツ、髪、服装、色調、背景、線画 です。
+その後に、身体比率・ポーズ・抽象印象の分解系を追加すると、Local LLM が「作りやすい slider」と「危ない slider」をかなり安定して見分けられるようになります。
