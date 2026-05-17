@@ -36,6 +36,8 @@ class TrainRequest:
     discrete_flow_shift: float
     loss_weighting_scheme: str
     direction_loss: str
+    teacher_guidance_scale: float
+    teacher_norm_reference: str
     min_step_index: int | None
     max_step_index: int | None
     eval_step_indices: list[int] | None
@@ -392,21 +394,40 @@ def compute_flow_teacher_parts(patcher, latent, sigma, record):
         target_base = forward_role(patcher, latent, sigma, record.conds["target"]).detach()
         positive_base = forward_role(patcher, latent, sigma, record.conds["positive"]).detach()
         unconditional_base = forward_role(patcher, latent, sigma, record.conds["unconditional"]).detach()
+        neutral_base = forward_role(patcher, latent, sigma, record.conds.get("neutral", record.conds["target"])).detach()
     return {
         "target_base": target_base,
         "positive_base": positive_base,
         "unconditional_base": unconditional_base,
+        "neutral_base": neutral_base,
     }
 
 
-def teacher_from_parts(teacher_parts: dict[str, torch.Tensor], eta: float, action: str) -> torch.Tensor:
+def norm_reference_for_teacher(teacher_parts: dict[str, torch.Tensor], norm_reference: str) -> torch.Tensor | None:
+    if norm_reference == "none":
+        return None
+    key = f"{norm_reference}_base"
+    if key not in teacher_parts:
+        raise ValueError(f"Unsupported teacher_norm_reference: {norm_reference!r}")
+    return teacher_parts[key]
+
+
+def teacher_from_parts(
+    teacher_parts: dict[str, torch.Tensor],
+    eta: float,
+    action: str,
+    guidance_scale: float = 1.0,
+    norm_reference: str = "positive",
+) -> torch.Tensor:
+    if guidance_scale < 0:
+        raise ValueError("teacher_guidance_scale must be non-negative")
     return slider_loss.flow_slider_teacher(
         teacher_parts["target_base"],
         teacher_parts["positive_base"],
         teacher_parts["unconditional_base"],
-        eta=eta,
+        eta=eta * guidance_scale,
         action=action,
-        normalize_to=teacher_parts["positive_base"],
+        normalize_to=norm_reference_for_teacher(teacher_parts, norm_reference),
     )
 
 
@@ -488,6 +509,7 @@ def build_flow_loss_info(
         "target_base_norm": tensor_norm(teacher_parts["target_base"]),
         "positive_base_norm": tensor_norm(teacher_parts["positive_base"]),
         "unconditional_base_norm": tensor_norm(teacher_parts["unconditional_base"]),
+        "neutral_base_norm": tensor_norm(teacher_parts["neutral_base"]),
     }
 
 
@@ -503,6 +525,8 @@ def flow_loss_for_record(
     loss_weighting_scheme: str,
     train: bool,
     direction_loss: str = "enhance_only",
+    teacher_guidance_scale: float = 1.0,
+    teacher_norm_reference: str = "positive",
 ) -> tuple[torch.Tensor, dict]:
     total_started_at = time.perf_counter()
     timings = {}
@@ -528,20 +552,40 @@ def flow_loss_for_record(
     loss_weight = compute_loss_weight_for_sigma(sigma, loss_weighting_scheme).mean().to(device)
 
     if direction_loss == "enhance_only":
-        teacher = teacher_from_parts(teacher_parts, eta=eta, action=record.action).detach()
+        teacher = teacher_from_parts(
+            teacher_parts,
+            eta=eta,
+            action=record.action,
+            guidance_scale=teacher_guidance_scale,
+            norm_reference=teacher_norm_reference,
+        ).detach()
         started_at = time.perf_counter()
         loss, raw_loss, model_pred = branch_loss_for_teacher(
             patcher, latent, sigma, record.conds["target"], teacher, loss_weight, train=train, lora_multiplier=1.0
         )
         timings["lora_forward_loss"] = time.perf_counter() - started_at
         info = build_flow_loss_info(step_index, sigmas, loss_weight, raw_loss, model_pred, teacher_parts, teacher)
+        info["teacher_guidance_scale"] = teacher_guidance_scale
+        info["teacher_norm_reference"] = teacher_norm_reference
         timings["total_forward"] = time.perf_counter() - total_started_at
         info["phase_timings"] = {key: round(value, 3) for key, value in timings.items()}
         return loss, info
 
     if direction_loss == "bidirectional":
-        enhance_teacher = teacher_from_parts(teacher_parts, eta=eta, action="enhance").detach()
-        erase_teacher = teacher_from_parts(teacher_parts, eta=eta, action="erase").detach()
+        enhance_teacher = teacher_from_parts(
+            teacher_parts,
+            eta=eta,
+            action="enhance",
+            guidance_scale=teacher_guidance_scale,
+            norm_reference=teacher_norm_reference,
+        ).detach()
+        erase_teacher = teacher_from_parts(
+            teacher_parts,
+            eta=eta,
+            action="erase",
+            guidance_scale=teacher_guidance_scale,
+            norm_reference=teacher_norm_reference,
+        ).detach()
         started_at = time.perf_counter()
         enhance_loss, enhance_raw_loss, enhance_model_pred = branch_loss_for_teacher(
             patcher, latent, sigma, record.conds["target"], enhance_teacher, loss_weight, train=train, lora_multiplier=1.0
@@ -556,6 +600,8 @@ def flow_loss_for_record(
         info.update(
             {
                 "direction_loss": direction_loss,
+                "teacher_guidance_scale": teacher_guidance_scale,
+                "teacher_norm_reference": teacher_norm_reference,
                 "enhance_raw_loss": float(enhance_raw_loss.detach().cpu().item()),
                 "erase_raw_loss": float(erase_raw_loss.detach().cpu().item()),
                 "enhance_model_pred_norm": tensor_norm(enhance_model_pred),
@@ -579,6 +625,8 @@ def evaluate_records(
     eta: float,
     loss_weighting_scheme: str,
     direction_loss: str = "enhance_only",
+    teacher_guidance_scale: float = 1.0,
+    teacher_norm_reference: str = "positive",
 ):
     losses = []
     details = []
@@ -596,6 +644,8 @@ def evaluate_records(
                 loss_weighting_scheme=loss_weighting_scheme,
                 train=False,
                 direction_loss=direction_loss,
+                teacher_guidance_scale=teacher_guidance_scale,
+                teacher_norm_reference=teacher_norm_reference,
             )
             value = float(loss.detach().cpu().item())
             losses.append(value)
@@ -708,6 +758,8 @@ def train_lora_from_records(model, records: list[AnimaPromptConds], request: Tra
                 eta=request.eta,
                 loss_weighting_scheme=request.loss_weighting_scheme,
                 direction_loss=request.direction_loss,
+                teacher_guidance_scale=request.teacher_guidance_scale,
+                teacher_norm_reference=request.teacher_norm_reference,
             )
             LOGGER.info(
                 "Anima slider initial eval complete: mean_loss=%.6g, elapsed=%.1fs, cuda_memory=%s",
@@ -754,6 +806,8 @@ def train_lora_from_records(model, records: list[AnimaPromptConds], request: Tra
                     loss_weighting_scheme=request.loss_weighting_scheme,
                     train=True,
                     direction_loss=request.direction_loss,
+                    teacher_guidance_scale=request.teacher_guidance_scale,
+                    teacher_norm_reference=request.teacher_norm_reference,
                 )
                 backward_started_at = time.perf_counter()
                 loss.backward()
@@ -800,6 +854,8 @@ def train_lora_from_records(model, records: list[AnimaPromptConds], request: Tra
                 eta=request.eta,
                 loss_weighting_scheme=request.loss_weighting_scheme,
                 direction_loss=request.direction_loss,
+                teacher_guidance_scale=request.teacher_guidance_scale,
+                teacher_norm_reference=request.teacher_norm_reference,
             )
             LOGGER.info(
                 "Anima slider final eval complete: mean_loss=%.6g, elapsed=%.1fs, cuda_memory=%s",
@@ -847,6 +903,8 @@ def train_lora_from_records(model, records: list[AnimaPromptConds], request: Tra
             "discrete_flow_shift": request.discrete_flow_shift,
             "loss_weighting_scheme": request.loss_weighting_scheme,
             "direction_loss": request.direction_loss,
+            "teacher_guidance_scale": request.teacher_guidance_scale,
+            "teacher_norm_reference": request.teacher_norm_reference,
             "image_seq_len": image_seq_len,
             "min_step_index": min_step_index,
             "max_step_index": max_step_index,

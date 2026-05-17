@@ -106,6 +106,53 @@ class TrainingUtilTests(unittest.TestCase):
 
         self.assertTrue(all(1 <= value <= 4 for value in values))
 
+    def test_teacher_from_parts_applies_guidance_scale_to_direction(self):
+        parts = {
+            "target_base": torch.tensor([[1.0, 0.0]]),
+            "positive_base": torch.tensor([[3.0, 0.0]]),
+            "unconditional_base": torch.tensor([[2.0, 0.0]]),
+            "neutral_base": torch.tensor([[1.0, 0.0]]),
+        }
+
+        teacher = training.teacher_from_parts(
+            parts,
+            eta=2.0,
+            action="enhance",
+            guidance_scale=0.5,
+            norm_reference="none",
+        )
+
+        torch.testing.assert_close(teacher, torch.tensor([[2.0, 0.0]]))
+
+    def test_teacher_from_parts_can_normalize_to_neutral_base(self):
+        parts = {
+            "target_base": torch.tensor([[2.0, 0.0]]),
+            "positive_base": torch.tensor([[6.0, 0.0]]),
+            "unconditional_base": torch.tensor([[4.0, 0.0]]),
+            "neutral_base": torch.tensor([[3.0, 0.0]]),
+        }
+
+        teacher = training.teacher_from_parts(
+            parts,
+            eta=1.0,
+            action="enhance",
+            guidance_scale=1.0,
+            norm_reference="neutral",
+        )
+
+        torch.testing.assert_close(teacher, torch.tensor([[3.0, 0.0]]))
+
+    def test_teacher_from_parts_rejects_unknown_norm_reference(self):
+        parts = {
+            "target_base": torch.tensor([[1.0, 0.0]]),
+            "positive_base": torch.tensor([[3.0, 0.0]]),
+            "unconditional_base": torch.tensor([[2.0, 0.0]]),
+            "neutral_base": torch.tensor([[1.0, 0.0]]),
+        }
+
+        with self.assertRaisesRegex(ValueError, "Unsupported teacher_norm_reference"):
+            training.teacher_from_parts(parts, eta=1.0, action="enhance", norm_reference="unknown")
+
     def test_inject_lora_can_restore_original_modules(self):
         model = FakeDiffusion()
         original = model.diffusion_model.blocks[0].self_attn.q_proj
