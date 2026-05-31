@@ -15,6 +15,12 @@ from .tensor_util import needs_normal_tensor, normal_detached_cpu_tensor, normal
 
 LOGGER = logging.getLogger(__name__)
 TEXT_ADAPTER_EXTRA_KEYS = {"t5xxl_ids", "t5xxl_weights"}
+FLOATING_MODEL_DTYPES = {torch.float16, torch.bfloat16, torch.float32}
+
+
+def model_forward_dtype(model_patcher: Any) -> torch.dtype:
+    dtype = model_patcher.model.get_dtype_inference()
+    return dtype if dtype in FLOATING_MODEL_DTYPES else torch.float32
 
 
 def latent_shape_for_resolution(model_patcher: Any, width: int, height: int, batch_size: int = 1) -> tuple[int, ...]:
@@ -34,11 +40,12 @@ def make_random_latent(
     batch_size: int,
     seed: int,
     device: torch.device | str | None = None,
+    dtype: torch.dtype | None = None,
 ) -> torch.Tensor:
     shape = latent_shape_for_resolution(model_patcher, width, height, batch_size=batch_size)
     generator = torch.Generator(device="cpu").manual_seed(seed)
     latent = torch.randn(shape, generator=generator, dtype=torch.float32)
-    return latent.to(device or model_patcher.load_device)
+    return latent.to(device=device or model_patcher.load_device, dtype=dtype or model_forward_dtype(model_patcher))
 
 
 def simple_sigmas_from_model_sampling(model_sampling: Any, steps: int, device: torch.device | str | None = None) -> torch.Tensor:
@@ -82,7 +89,7 @@ def scale_noise_for_sigma(model_patcher: Any, noise: torch.Tensor, sigma: torch.
     model_sampling = model_patcher.get_model_object("model_sampling")
     latent_image = torch.zeros_like(noise)
     sigma = sigma.to(device=noise.device, dtype=torch.float32)
-    return model_sampling.noise_scaling(sigma, noise, latent_image, max_denoise=True)
+    return model_sampling.noise_scaling(sigma, noise, latent_image, max_denoise=True).to(dtype=noise.dtype)
 
 
 def euler_step_from_denoised(
@@ -396,7 +403,8 @@ def apply_model_with_condition(
     cond: AnimaCond,
 ) -> torch.Tensor:
     model = model_patcher.model
-    dtype = model.get_dtype_inference()
+    dtype = model_forward_dtype(model_patcher)
+    latent = latent.to(dtype=dtype)
     kwargs = condition_to_model_kwargs(cond, device=latent.device, dtype=dtype)
     diffusion_model = getattr(model, "diffusion_model", None)
     with safe_frozen_model_ops(diffusion_model) as patched_counts:

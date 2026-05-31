@@ -33,6 +33,19 @@ ComfyUI を再起動すると、`training/anima slider` に `Train Anima Slider 
 
 LoRA と report は ComfyUI の output directory 配下に保存されます。`output_lora_prefix` の既定値は `loras/anima_slider` です。
 
+## 16GB VRAM向けの確認手順
+
+16GB VRAMで高解像度学習を狙う場合は、`network_preset=attn_mlp` を維持し、`model_residency=prefer_cuda` と `gradient_checkpointing=True` を基本設定にしてください。`dynamic` はCUDA常駐が失敗する場合の最後の手段です。
+
+推奨する切り分け順:
+
+1. `width=512`, `height=512`, `steps=1`, `prompt_indices=0`
+2. `width=768`, `height=768`, `steps=1`, `prompt_indices=0`
+3. `width=1024`, `height=1024`, `steps=1`, `prompt_indices=0`, `skip_initial_eval=True`, `skip_final_eval=True`
+4. 1024x1024の学習本体が通った後で、`skip_initial_eval=False`, `skip_final_eval=False` に戻してeval込みを確認
+
+`skip_initial_eval` と `skip_final_eval` はOOM phaseを分けるための診断用です。品質評価の代替ではありません。report JSONには `gradient_checkpointing`, eval skip設定、setup後とtext adapter precompute後のCUDA memory diagnostics、各stepのphase timingsが記録されます。
+
 ## Prompt YAML
 
 YAML は list 形式です。
@@ -57,4 +70,5 @@ YAML は list 形式です。
 - `MODEL` に LoRA wrapper を一時注入しますが、学習終了時に元の linear module へ戻します。
 - `steps` の既定値は `600` です。短い smoke 確認だけ行う場合は、一時的に `steps=3`, `width=512`, `height=512`, `prompt_indices=0,1,2,3` 程度まで下げてください。
 - `model_residency=prefer_cuda` は ComfyUI のロード後に base model を CUDA へ寄せる best-effort 設定です。OOM になる環境では `dynamic` に戻してください。
+- 16GB VRAMで1024x1024を狙う場合も、LoRA対象を `attn_only` へ削るのではなく、まず `attn_mlp` と `gradient_checkpointing=True` の組み合わせで確認してください。
 - bundled prompt のうち年齢語を含む YAML は `allow_unsafe_age_terms=True` が必要な場合があります。

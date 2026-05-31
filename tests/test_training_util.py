@@ -172,6 +172,51 @@ class TrainingUtilTests(unittest.TestCase):
 
         self.assertIs(model.diffusion_model.blocks[0].self_attn.q_proj, original)
 
+    def test_lora_linear_uses_base_weight_dtype(self):
+        for dtype in (torch.float16, torch.bfloat16, torch.float32):
+            with self.subTest(dtype=dtype):
+                base = torch.nn.Linear(3, 4, bias=False, dtype=dtype)
+
+                wrapped = lora_network.LoRALinear(base, rank=2, alpha=2.0)
+
+                self.assertEqual(wrapped.lora_down.weight.dtype, dtype)
+                self.assertEqual(wrapped.lora_up.weight.dtype, dtype)
+
+    def test_lora_linear_falls_back_to_float32_for_unsupported_base_dtype(self):
+        base = torch.nn.Linear(3, 4, bias=False, dtype=torch.float64)
+
+        wrapped = lora_network.LoRALinear(base, rank=2, alpha=2.0)
+
+        self.assertEqual(wrapped.lora_down.weight.dtype, torch.float32)
+        self.assertEqual(wrapped.lora_up.weight.dtype, torch.float32)
+
+    def test_gradient_checkpoint_diffusion_blocks_patches_and_restores_trainable_blocks(self):
+        model = FakeDiffusion()
+        lora_network.inject_lora_linear_modules(
+            model,
+            include_patterns=["model.diffusion_model.blocks.*.self_attn.*_proj"],
+            exclude_patterns=[],
+            rank=2,
+            alpha=2.0,
+        )
+        block = model.diffusion_model.blocks[0]
+        original_forward = block.forward
+
+        with training.gradient_checkpoint_diffusion_blocks(model, enabled=True) as summary:
+            self.assertTrue(summary["enabled"])
+            self.assertEqual(summary["patched_blocks"], 1)
+            self.assertIsNot(block.forward.__func__, original_forward.__func__)
+
+        self.assertIs(block.forward.__func__, original_forward.__func__)
+
+    def test_gradient_checkpoint_diffusion_blocks_reports_missing_blocks(self):
+        model = torch.nn.Linear(3, 4)
+
+        with training.gradient_checkpoint_diffusion_blocks(model, enabled=True) as summary:
+            self.assertFalse(summary["enabled"])
+            self.assertEqual(summary["patched_blocks"], 0)
+            self.assertIn("blocks", summary["reason"])
+
     def test_build_lora_optimizer_param_groups_applies_regex_lrs(self):
         model = FakeDiffusion()
         lora_network.inject_lora_linear_modules(

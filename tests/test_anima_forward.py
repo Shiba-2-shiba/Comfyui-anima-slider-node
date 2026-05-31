@@ -14,12 +14,13 @@ from anima_slider_node.conditioning import AnimaCond, AnimaPromptConds
 
 
 class FakeBaseModel(torch.nn.Module):
-    def __init__(self):
+    def __init__(self, dtype=torch.float32):
         super().__init__()
         self.diffusion_model = FakeDiffusionModel()
+        self.dtype = dtype
 
     def get_dtype_inference(self):
-        return torch.float32
+        return self.dtype
 
 
 class FakeDiffusionModel(torch.nn.Module):
@@ -58,11 +59,33 @@ class FrozenThenTrainable(torch.nn.Module):
 class FakePatcher:
     load_device = "cpu"
 
-    def __init__(self):
-        self.model = FakeBaseModel()
+    def __init__(self, dtype=torch.float32):
+        self.model = FakeBaseModel(dtype=dtype)
+
+    def get_model_object(self, name):
+        if name == "latent_format":
+            return type(
+                "FakeLatentFormat",
+                (),
+                {"latent_channels": 4, "spacial_downscale_ratio": 16, "latent_dimensions": 2},
+            )()
+        raise KeyError(name)
 
 
 class AnimaForwardTests(unittest.TestCase):
+    def test_model_forward_dtype_uses_supported_inference_dtype(self):
+        self.assertEqual(anima_forward.model_forward_dtype(FakePatcher(dtype=torch.float16)), torch.float16)
+        self.assertEqual(anima_forward.model_forward_dtype(FakePatcher(dtype=torch.bfloat16)), torch.bfloat16)
+
+    def test_model_forward_dtype_falls_back_to_float32(self):
+        self.assertEqual(anima_forward.model_forward_dtype(FakePatcher(dtype=torch.float64)), torch.float32)
+
+    def test_make_random_latent_uses_model_forward_dtype(self):
+        latent = anima_forward.make_random_latent(FakePatcher(dtype=torch.float16), 512, 512, 1, seed=1)
+
+        self.assertEqual(latent.dtype, torch.float16)
+        self.assertEqual(tuple(latent.shape), (1, 4, 32, 32))
+
     def test_precompute_anima_text_adapter_materializes_normal_condition_without_t5_extras(self):
         with torch.inference_mode():
             cond = AnimaCond(

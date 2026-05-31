@@ -12,7 +12,7 @@ from anima_slider_node import prompt_util
 
 class PromptUtilTests(unittest.TestCase):
     def test_loads_bundled_prompt_yaml(self):
-        prompts = prompt_util.load_prompts_from_yaml(REPO_ROOT / "prompts" / "prompts-anima-age_slider_v2.yaml")
+        prompts = prompt_util.load_prompts_from_yaml(REPO_ROOT / "prompts" / "prompts-anima-age_slider_fullbody_v2.yaml")
 
         self.assertGreater(len(prompts), 0)
         self.assertEqual(prompts[0].action, "enhance")

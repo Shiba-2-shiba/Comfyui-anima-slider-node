@@ -10,6 +10,7 @@ import torch
 
 
 T = TypeVar("T")
+LORA_WEIGHT_DTYPES = {torch.float16, torch.bfloat16, torch.float32}
 
 
 @dataclass(frozen=True)
@@ -27,6 +28,10 @@ class RestoredModule:
     base: torch.nn.Module
 
 
+def lora_dtype_for_base_weight(weight: torch.Tensor) -> torch.dtype:
+    return weight.dtype if weight.dtype in LORA_WEIGHT_DTYPES else torch.float32
+
+
 class LoRALinear(torch.nn.Module):
     def __init__(self, base_linear: torch.nn.Linear, rank: int, alpha: float):
         super().__init__()
@@ -40,8 +45,9 @@ class LoRALinear(torch.nn.Module):
 
         weight = base_linear.weight
         out_dim, in_dim = weight.shape
-        self.lora_down = torch.nn.Linear(in_dim, rank, bias=False, device=weight.device, dtype=torch.float32)
-        self.lora_up = torch.nn.Linear(rank, out_dim, bias=False, device=weight.device, dtype=torch.float32)
+        lora_dtype = lora_dtype_for_base_weight(weight)
+        self.lora_down = torch.nn.Linear(in_dim, rank, bias=False, device=weight.device, dtype=lora_dtype)
+        self.lora_up = torch.nn.Linear(rank, out_dim, bias=False, device=weight.device, dtype=lora_dtype)
         self.scale = alpha / rank
         self.rank = rank
         self.alpha = alpha
@@ -55,7 +61,8 @@ class LoRALinear(torch.nn.Module):
         base_out = self.base(x)
         if not self.enabled:
             return base_out
-        lora_out = self.lora_up(self.lora_down(x.to(dtype=self.lora_down.weight.dtype))) * self.scale * self.multiplier
+        lora_input = x if x.dtype == self.lora_down.weight.dtype else x.to(dtype=self.lora_down.weight.dtype)
+        lora_out = self.lora_up(self.lora_down(lora_input)) * self.scale * self.multiplier
         return base_out + lora_out.to(dtype=base_out.dtype)
 
 

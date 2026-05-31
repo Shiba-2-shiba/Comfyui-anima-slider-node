@@ -1,15 +1,17 @@
 from __future__ import annotations
 
 from collections import Counter
-from contextlib import nullcontext
+from contextlib import contextmanager, nullcontext
 from dataclasses import dataclass
 import logging
 import math
 import time
+from types import MethodType
 from typing import Any
 
 import torch
 import torch.nn.functional as F
+from torch.utils.checkpoint import checkpoint
 
 from . import anima_forward, lora_network, slider_loss
 from .conditioning import AnimaPromptConds
@@ -50,6 +52,9 @@ class TrainRequest:
     reg_dims: dict[str, int]
     reg_lrs: dict[str, float]
     model_residency: str
+    gradient_checkpointing: bool = True
+    skip_initial_eval: bool = False
+    skip_final_eval: bool = False
 
 
 def freeze_parameters(model: torch.nn.Module):
@@ -376,6 +381,64 @@ def materialize_inference_tensors_for_training(module: torch.nn.Module) -> dict[
     }
 
 
+def module_has_trainable_parameters_recursive(module: torch.nn.Module) -> bool:
+    return any(parameter.requires_grad for parameter in module.parameters(recurse=True))
+
+
+def _checkpoint_forward_wrapper(original_forward):
+    def forward(self, *args, **kwargs):
+        if not torch.is_grad_enabled():
+            return original_forward(*args, **kwargs)
+
+        def run_function(*inner_args):
+            return original_forward(*inner_args, **kwargs)
+
+        return checkpoint(run_function, *args, use_reentrant=False, preserve_rng_state=False)
+
+    return forward
+
+
+@contextmanager
+def gradient_checkpoint_diffusion_blocks(model: torch.nn.Module, enabled: bool):
+    summary = {
+        "requested": bool(enabled),
+        "enabled": False,
+        "patched_blocks": 0,
+        "reason": None,
+        "use_reentrant": False,
+        "preserve_rng_state": False,
+    }
+    if not enabled:
+        summary["reason"] = "disabled by request"
+        yield summary
+        return
+
+    diffusion_model = getattr(model, "diffusion_model", None)
+    blocks = getattr(diffusion_model, "blocks", None)
+    if blocks is None:
+        summary["reason"] = "model.diffusion_model.blocks not found"
+        yield summary
+        return
+
+    patched = []
+    for block in blocks:
+        if not module_has_trainable_parameters_recursive(block):
+            continue
+        patched.append((block, block.forward))
+        block.forward = MethodType(_checkpoint_forward_wrapper(block.forward), block)
+
+    summary["patched_blocks"] = len(patched)
+    summary["enabled"] = bool(patched)
+    if not patched:
+        summary["reason"] = "no trainable diffusion blocks found"
+
+    try:
+        yield summary
+    finally:
+        for block, original_forward in reversed(patched):
+            block.forward = original_forward
+
+
 @torch.no_grad()
 def target_trajectory_latent(patcher, noise, sigmas, step_index: int, cond):
     latent = anima_forward.scale_noise_for_sigma(patcher, noise, sigmas[0].reshape(1).to(noise.device))
@@ -539,6 +602,7 @@ def flow_loss_for_record(
         batch_size=record.batch_size,
         seed=seed,
         device=device,
+        dtype=anima_forward.model_forward_dtype(patcher),
     )
     timings["noise"] = time.perf_counter() - started_at
     step_index = anima_forward.validate_training_step_index(sigmas, step_index)
@@ -715,7 +779,13 @@ def train_lora_from_records(model, records: list[AnimaPromptConds], request: Tra
         LOGGER.info("Anima slider text adapter precompute started: conditions=%s", len(records) * 4)
         with lora_network.lora_enabled(mp.model, False):
             records, text_adapter_summary = anima_forward.precompute_anima_text_adapter_records(mp, records)
-        LOGGER.info("Anima text adapter precompute: %s, elapsed=%.1fs", text_adapter_summary, time.perf_counter() - precompute_started_at)
+        cuda_memory_after_text_precompute = cuda_memory_diagnostics(device)
+        LOGGER.info(
+            "Anima text adapter precompute: %s, elapsed=%.1fs, cuda_memory=%s",
+            text_adapter_summary,
+            time.perf_counter() - precompute_started_at,
+            cuda_memory_after_text_precompute,
+        )
         train_records = [records[index] for index in request.prompt_indices]
         eval_records = [records[index] for index in request.eval_prompt_indices]
         sigmas = anima_forward.sigmas_for_steps(
@@ -745,124 +815,133 @@ def train_lora_from_records(model, records: list[AnimaPromptConds], request: Tra
                 request.height,
                 device,
             )
-            initial_eval_started_at = time.perf_counter()
-            LOGGER.info("Anima slider initial eval started: eval_prompts=%s, eval_steps=%s", len(eval_records), eval_step_indices)
-            initial_eval = evaluate_records(
-                mp,
-                eval_records,
-                width=request.width,
-                height=request.height,
-                seed=request.eval_seed,
-                sigmas=sigmas,
-                step_indices=eval_step_indices,
-                eta=request.eta,
-                loss_weighting_scheme=request.loss_weighting_scheme,
-                direction_loss=request.direction_loss,
-                teacher_guidance_scale=request.teacher_guidance_scale,
-                teacher_norm_reference=request.teacher_norm_reference,
-            )
-            LOGGER.info(
-                "Anima slider initial eval complete: mean_loss=%.6g, elapsed=%.1fs, cuda_memory=%s",
-                initial_eval["mean_loss"],
-                time.perf_counter() - initial_eval_started_at,
-                cuda_memory_diagnostics(device),
-            )
-            loop_started_at = time.perf_counter()
-            last_progress_log_at = loop_started_at
-            last_progress_step = 0
-            for step in range(request.steps):
-                record = train_records[step % len(train_records)]
-                step_seed = request.seed + step if request.vary_seed else request.seed
-                step_index = choose_training_step_index(
-                    step=step,
-                    seed=request.seed,
-                    minimum=min_step_index,
-                    maximum=max_step_index,
-                    mode=request.timestep_sampling,
-                    sigmas=sigmas,
-                    sigmoid_scale=request.sigmoid_scale,
-                    discrete_flow_shift=request.discrete_flow_shift,
-                    image_seq_len=image_seq_len,
-                )
-                step_number = step + 1
-                if should_log_training_progress(step_number, request.steps, log_interval):
-                    LOGGER.info(
-                        "Anima slider training step started: step %s/%s (%.1f%%), prompt_index=%s",
-                        step_number,
-                        request.steps,
-                        100.0 * step_number / request.steps,
-                        record.prompt_index,
-                    )
-                optimizer.zero_grad(set_to_none=True)
-                loss, info = flow_loss_for_record(
+            if request.skip_initial_eval:
+                LOGGER.info("Anima slider initial eval skipped by request")
+            else:
+                initial_eval_started_at = time.perf_counter()
+                LOGGER.info("Anima slider initial eval started: eval_prompts=%s, eval_steps=%s", len(eval_records), eval_step_indices)
+                initial_eval = evaluate_records(
                     mp,
-                    record,
+                    eval_records,
                     width=request.width,
                     height=request.height,
-                    seed=step_seed,
+                    seed=request.eval_seed,
                     sigmas=sigmas,
-                    step_index=step_index,
+                    step_indices=eval_step_indices,
                     eta=request.eta,
                     loss_weighting_scheme=request.loss_weighting_scheme,
-                    train=True,
                     direction_loss=request.direction_loss,
                     teacher_guidance_scale=request.teacher_guidance_scale,
                     teacher_norm_reference=request.teacher_norm_reference,
                 )
-                backward_started_at = time.perf_counter()
-                loss.backward()
-                info.setdefault("phase_timings", {})["backward"] = round(time.perf_counter() - backward_started_at, 3)
-                optimizer_started_at = time.perf_counter()
-                optimizer.step()
-                info.setdefault("phase_timings", {})["optimizer_step"] = round(time.perf_counter() - optimizer_started_at, 3)
-                loss_value = float(loss.detach().cpu().item())
-                losses.append(loss_value)
-                step_records.append({"step": step + 1, "prompt_index": record.prompt_index, "seed": step_seed, "loss": loss_value, **info})
-                if progress is not None:
-                    progress.update(1)
-                if should_log_training_progress(step_number, request.steps, log_interval):
-                    now = time.perf_counter()
-                    elapsed = now - loop_started_at
-                    interval_seconds = now - last_progress_log_at
-                    interval_steps = max(1, step_number - last_progress_step)
-                    LOGGER.info(
-                        "Anima slider training progress: step %s/%s (%.1f%%), prompt_index=%s, loss=%.6g, elapsed=%.1fs, interval=%.1fs, sec_per_step=%.2f, phase_timings=%s, cuda_memory=%s",
-                        step_number,
-                        request.steps,
-                        100.0 * step_number / request.steps,
-                        record.prompt_index,
-                        loss_value,
-                        elapsed,
-                        interval_seconds,
-                        interval_seconds / interval_steps,
-                        info.get("phase_timings", {}),
-                        cuda_memory_diagnostics(device),
+                LOGGER.info(
+                    "Anima slider initial eval complete: mean_loss=%.6g, elapsed=%.1fs, cuda_memory=%s",
+                    initial_eval["mean_loss"],
+                    time.perf_counter() - initial_eval_started_at,
+                    cuda_memory_diagnostics(device),
+                )
+            loop_started_at = time.perf_counter()
+            last_progress_log_at = loop_started_at
+            last_progress_step = 0
+            with gradient_checkpoint_diffusion_blocks(mp.model, request.gradient_checkpointing) as gradient_checkpointing_summary:
+                LOGGER.info("Anima slider gradient checkpointing: %s", gradient_checkpointing_summary)
+                for step in range(request.steps):
+                    record = train_records[step % len(train_records)]
+                    step_seed = request.seed + step if request.vary_seed else request.seed
+                    step_index = choose_training_step_index(
+                        step=step,
+                        seed=request.seed,
+                        minimum=min_step_index,
+                        maximum=max_step_index,
+                        mode=request.timestep_sampling,
+                        sigmas=sigmas,
+                        sigmoid_scale=request.sigmoid_scale,
+                        discrete_flow_shift=request.discrete_flow_shift,
+                        image_seq_len=image_seq_len,
                     )
-                    last_progress_log_at = now
-                    last_progress_step = step_number
+                    step_number = step + 1
+                    if should_log_training_progress(step_number, request.steps, log_interval):
+                        LOGGER.info(
+                            "Anima slider training step started: step %s/%s (%.1f%%), prompt_index=%s",
+                            step_number,
+                            request.steps,
+                            100.0 * step_number / request.steps,
+                            record.prompt_index,
+                        )
+                    optimizer.zero_grad(set_to_none=True)
+                    loss, info = flow_loss_for_record(
+                        mp,
+                        record,
+                        width=request.width,
+                        height=request.height,
+                        seed=step_seed,
+                        sigmas=sigmas,
+                        step_index=step_index,
+                        eta=request.eta,
+                        loss_weighting_scheme=request.loss_weighting_scheme,
+                        train=True,
+                        direction_loss=request.direction_loss,
+                        teacher_guidance_scale=request.teacher_guidance_scale,
+                        teacher_norm_reference=request.teacher_norm_reference,
+                    )
+                    backward_started_at = time.perf_counter()
+                    loss.backward()
+                    info.setdefault("phase_timings", {})["backward"] = round(time.perf_counter() - backward_started_at, 3)
+                    optimizer_started_at = time.perf_counter()
+                    optimizer.step()
+                    info.setdefault("phase_timings", {})["optimizer_step"] = round(time.perf_counter() - optimizer_started_at, 3)
+                    info["cuda_memory_after_step"] = cuda_memory_diagnostics(device)
+                    loss_value = float(loss.detach().cpu().item())
+                    losses.append(loss_value)
+                    step_records.append({"step": step + 1, "prompt_index": record.prompt_index, "seed": step_seed, "loss": loss_value, **info})
+                    if progress is not None:
+                        progress.update(1)
+                    if should_log_training_progress(step_number, request.steps, log_interval):
+                        now = time.perf_counter()
+                        elapsed = now - loop_started_at
+                        interval_seconds = now - last_progress_log_at
+                        interval_steps = max(1, step_number - last_progress_step)
+                        LOGGER.info(
+                            "Anima slider training progress: step %s/%s (%.1f%%), prompt_index=%s, loss=%.6g, elapsed=%.1fs, interval=%.1fs, sec_per_step=%.2f, phase_timings=%s, cuda_memory=%s",
+                            step_number,
+                            request.steps,
+                            100.0 * step_number / request.steps,
+                            record.prompt_index,
+                            loss_value,
+                            elapsed,
+                            interval_seconds,
+                            interval_seconds / interval_steps,
+                            info.get("phase_timings", {}),
+                            info["cuda_memory_after_step"],
+                        )
+                        last_progress_log_at = now
+                        last_progress_step = step_number
 
-            final_eval_started_at = time.perf_counter()
-            LOGGER.info("Anima slider final eval started: eval_prompts=%s, eval_steps=%s", len(eval_records), eval_step_indices)
-            final_eval = evaluate_records(
-                mp,
-                eval_records,
-                width=request.width,
-                height=request.height,
-                seed=request.eval_seed,
-                sigmas=sigmas,
-                step_indices=eval_step_indices,
-                eta=request.eta,
-                loss_weighting_scheme=request.loss_weighting_scheme,
-                direction_loss=request.direction_loss,
-                teacher_guidance_scale=request.teacher_guidance_scale,
-                teacher_norm_reference=request.teacher_norm_reference,
-            )
-            LOGGER.info(
-                "Anima slider final eval complete: mean_loss=%.6g, elapsed=%.1fs, cuda_memory=%s",
-                final_eval["mean_loss"],
-                time.perf_counter() - final_eval_started_at,
-                cuda_memory_diagnostics(device),
-            )
+            if request.skip_final_eval:
+                LOGGER.info("Anima slider final eval skipped by request")
+            else:
+                final_eval_started_at = time.perf_counter()
+                LOGGER.info("Anima slider final eval started: eval_prompts=%s, eval_steps=%s", len(eval_records), eval_step_indices)
+                final_eval = evaluate_records(
+                    mp,
+                    eval_records,
+                    width=request.width,
+                    height=request.height,
+                    seed=request.eval_seed,
+                    sigmas=sigmas,
+                    step_indices=eval_step_indices,
+                    eta=request.eta,
+                    loss_weighting_scheme=request.loss_weighting_scheme,
+                    direction_loss=request.direction_loss,
+                    teacher_guidance_scale=request.teacher_guidance_scale,
+                    teacher_norm_reference=request.teacher_norm_reference,
+                )
+                LOGGER.info(
+                    "Anima slider final eval complete: mean_loss=%.6g, elapsed=%.1fs, cuda_memory=%s",
+                    final_eval["mean_loss"],
+                    time.perf_counter() - final_eval_started_at,
+                    cuda_memory_diagnostics(device),
+                )
             lora_sd = lora_network.lora_state_dict_from_model(mp.model)
             LOGGER.info(
                 "Anima slider training finished: steps=%s, final_loss=%.6g, total_elapsed=%.1fs, cuda_memory=%s",
@@ -896,6 +975,10 @@ def train_lora_from_records(model, records: list[AnimaPromptConds], request: Tra
             "lora_placement_after_setup": lora_placement_summary,
             "cuda_memory_after_setup": cuda_memory_after_setup,
             "anima_text_adapter_precompute": text_adapter_summary,
+            "cuda_memory_after_text_precompute": cuda_memory_after_text_precompute,
+            "gradient_checkpointing": gradient_checkpointing_summary,
+            "skip_initial_eval": request.skip_initial_eval,
+            "skip_final_eval": request.skip_final_eval,
             "num_inference_steps": request.num_inference_steps,
             "scheduler_name": request.scheduler_name,
             "timestep_sampling": request.timestep_sampling,

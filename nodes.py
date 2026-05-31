@@ -84,6 +84,9 @@ class AnimaSliderTrainLoraNode(io.ComfyNode):
                 io.String.Input("network_reg_dims", multiline=True, default="", tooltip="Optional YAML mapping of regex fullmatch patterns to LoRA ranks."),
                 io.String.Input("network_reg_lrs", multiline=True, default="", tooltip="Optional YAML mapping of regex fullmatch patterns to learning rates."),
                 io.Combo.Input("model_residency", options=["prefer_cuda", "dynamic"], default="prefer_cuda", tooltip="Best-effort base model residency after ComfyUI loading. Falls back to DynamicVRAM behavior if CUDA promotion fails."),
+                io.Boolean.Input("gradient_checkpointing", default=True, tooltip="Checkpoint trainable diffusion blocks during LoRA training to reduce activation VRAM."),
+                io.Boolean.Input("skip_initial_eval", default=False, tooltip="Skip the pre-training eval pass for OOM isolation. Not a quality substitute."),
+                io.Boolean.Input("skip_final_eval", default=False, tooltip="Skip the post-training eval pass for OOM isolation. Not a quality substitute."),
                 io.Int.Input("width", default=512, min=16, max=4096, step=16, tooltip="Training latent width in pixels."),
                 io.Int.Input("height", default=512, min=16, max=4096, step=16, tooltip="Training latent height in pixels."),
                 io.Int.Input("num_inference_steps", default=20, min=3, max=200, tooltip="Number of simple scheduler sigmas."),
@@ -130,6 +133,9 @@ class AnimaSliderTrainLoraNode(io.ComfyNode):
         network_reg_dims,
         network_reg_lrs,
         model_residency,
+        gradient_checkpointing,
+        skip_initial_eval,
+        skip_final_eval,
         width,
         height,
         num_inference_steps,
@@ -193,6 +199,9 @@ class AnimaSliderTrainLoraNode(io.ComfyNode):
             reg_dims=config.parse_yaml_mapping(network_reg_dims, int),
             reg_lrs=config.parse_yaml_mapping(network_reg_lrs, float),
             model_residency=model_residency,
+            gradient_checkpointing=gradient_checkpointing,
+            skip_initial_eval=skip_initial_eval,
+            skip_final_eval=skip_final_eval,
         )
 
         from comfy.utils import ProgressBar  # type: ignore
