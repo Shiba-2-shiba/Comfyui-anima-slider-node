@@ -217,6 +217,30 @@ class TrainingUtilTests(unittest.TestCase):
             self.assertEqual(summary["patched_blocks"], 0)
             self.assertIn("blocks", summary["reason"])
 
+    def test_autograd_rope1_preserves_gradient(self):
+        x = torch.randn(1, 2, 3, 4, requires_grad=True)
+        freqs = torch.randn(1, 1, 3, 2, 2, 2)
+
+        out = training._autograd_rope1(x, freqs)
+        out.sum().backward()
+
+        self.assertIsNotNone(x.grad)
+        self.assertEqual(out.shape, x.shape)
+
+    def test_autograd_safe_comfy_kitchen_rope_patches_and_restores(self):
+        try:
+            import comfy_kitchen  # type: ignore
+        except Exception:
+            self.skipTest("comfy_kitchen is not installed")
+
+        original = comfy_kitchen.apply_rope1
+
+        with training.autograd_safe_comfy_kitchen_rope(True) as summary:
+            self.assertTrue(summary["patched"])
+            self.assertIs(comfy_kitchen.apply_rope1, training._autograd_rope1)
+
+        self.assertIs(comfy_kitchen.apply_rope1, original)
+
     def test_build_lora_optimizer_param_groups_applies_regex_lrs(self):
         model = FakeDiffusion()
         lora_network.inject_lora_linear_modules(

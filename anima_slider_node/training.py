@@ -439,6 +439,107 @@ def gradient_checkpoint_diffusion_blocks(model: torch.nn.Module, enabled: bool):
             block.forward = original_forward
 
 
+def _autograd_rope1(x: torch.Tensor, freqs_cis: torch.Tensor) -> torch.Tensor:
+    x_ = x.to(dtype=freqs_cis.dtype).reshape(*x.shape[:-1], -1, 1, 2)
+    if x_.shape[2] != 1 and freqs_cis.shape[2] != 1 and x_.shape[2] != freqs_cis.shape[2]:
+        freqs_cis = freqs_cis[:, :, : x_.shape[2]]
+    x_out = freqs_cis[..., 0] * x_[..., 0] + freqs_cis[..., 1] * x_[..., 1]
+    return x_out.reshape(*x.shape).type_as(x)
+
+
+def _autograd_rope(xq: torch.Tensor, xk: torch.Tensor, freqs_cis: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+    return _autograd_rope1(xq, freqs_cis), _autograd_rope1(xk, freqs_cis)
+
+
+def _reshape_rope_factor(factor: torch.Tensor, x: torch.Tensor) -> torch.Tensor:
+    factor = factor.to(device=x.device, dtype=x.dtype)
+    if factor.ndim == x.ndim:
+        return factor
+    if factor.ndim == x.ndim - 1 and x.ndim >= 3:
+        return factor.unsqueeze(-3)
+    while factor.ndim < x.ndim:
+        factor = factor.unsqueeze(0)
+    return factor
+
+
+def _autograd_rope_split_half1(x: torch.Tensor, cos: torch.Tensor, sin: torch.Tensor) -> torch.Tensor:
+    dtype = cos.dtype if cos.dtype in {torch.float16, torch.bfloat16, torch.float32, torch.float64} else x.dtype
+    x_work = x.to(dtype=dtype)
+    half = x_work.shape[-1] // 2
+    x1 = x_work[..., :half]
+    x2 = x_work[..., half:]
+    cos = _reshape_rope_factor(cos, x1)
+    sin = _reshape_rope_factor(sin, x1)
+    return torch.cat((x1 * cos - x2 * sin, x2 * cos + x1 * sin), dim=-1).type_as(x)
+
+
+def _autograd_rope_split_half(*args, **kwargs):
+    if kwargs:
+        if {"xq", "xk", "cos", "sin"} <= set(kwargs):
+            return (
+                _autograd_rope_split_half1(kwargs["xq"], kwargs["cos"], kwargs["sin"]),
+                _autograd_rope_split_half1(kwargs["xk"], kwargs["cos"], kwargs["sin"]),
+            )
+        if {"x", "cos", "sin"} <= set(kwargs):
+            return _autograd_rope_split_half1(kwargs["x"], kwargs["cos"], kwargs["sin"])
+        if {"xq", "xk", "freqs_cis"} <= set(kwargs):
+            return _autograd_rope(kwargs["xq"], kwargs["xk"], kwargs["freqs_cis"])
+        if {"x", "freqs_cis"} <= set(kwargs):
+            return _autograd_rope1(kwargs["x"], kwargs["freqs_cis"])
+
+    if len(args) == 2:
+        return _autograd_rope1(args[0], args[1])
+    if len(args) == 3:
+        if args[2].shape[-1] == 2:
+            return _autograd_rope(args[0], args[1], args[2])
+        return _autograd_rope_split_half1(args[0], args[1], args[2])
+    if len(args) == 4:
+        return _autograd_rope_split_half1(args[0], args[2], args[3]), _autograd_rope_split_half1(args[1], args[2], args[3])
+    raise TypeError(f"Unsupported comfy_kitchen RoPE arguments: args={len(args)} kwargs={sorted(kwargs)}")
+
+
+@contextmanager
+def autograd_safe_comfy_kitchen_rope(enabled: bool = True):
+    summary = {"requested": bool(enabled), "patched": False, "patched_ops": [], "reason": None}
+    if not enabled:
+        summary["reason"] = "disabled by request"
+        yield summary
+        return
+
+    try:
+        import comfy_kitchen  # type: ignore
+    except Exception as exc:
+        summary["reason"] = f"comfy_kitchen unavailable: {type(exc).__name__}: {exc}"
+        yield summary
+        return
+
+    replacements = {
+        "apply_rope": _autograd_rope,
+        "apply_rope1": _autograd_rope1,
+        "apply_rope_split_half": _autograd_rope_split_half,
+    }
+    patched = []
+    namespace = getattr(torch.ops, "comfy_kitchen", None)
+    for name, replacement in replacements.items():
+        if hasattr(comfy_kitchen, name):
+            patched.append((comfy_kitchen, name, getattr(comfy_kitchen, name)))
+            setattr(comfy_kitchen, name, replacement)
+            summary["patched_ops"].append(f"comfy_kitchen.{name}")
+        if namespace is not None and hasattr(namespace, name):
+            patched.append((namespace, name, getattr(namespace, name)))
+            setattr(namespace, name, replacement)
+            summary["patched_ops"].append(f"torch.ops.comfy_kitchen.{name}")
+
+    summary["patched"] = bool(patched)
+    if not patched:
+        summary["reason"] = "no known comfy_kitchen RoPE ops found"
+    try:
+        yield summary
+    finally:
+        for target, name, original in reversed(patched):
+            setattr(target, name, original)
+
+
 @torch.no_grad()
 def target_trajectory_latent(patcher, noise, sigmas, step_index: int, cond):
     latent = anima_forward.scale_noise_for_sigma(patcher, noise, sigmas[0].reshape(1).to(noise.device))
@@ -801,6 +902,7 @@ def train_lora_from_records(model, records: list[AnimaPromptConds], request: Tra
         step_records = []
         initial_eval = None
         final_eval = None
+        autograd_rope_summary = None
         log_interval = progress_log_interval(request.steps)
 
         try:
@@ -843,8 +945,12 @@ def train_lora_from_records(model, records: list[AnimaPromptConds], request: Tra
             loop_started_at = time.perf_counter()
             last_progress_log_at = loop_started_at
             last_progress_step = 0
-            with gradient_checkpoint_diffusion_blocks(mp.model, request.gradient_checkpointing) as gradient_checkpointing_summary:
+            with (
+                gradient_checkpoint_diffusion_blocks(mp.model, request.gradient_checkpointing) as gradient_checkpointing_summary,
+                autograd_safe_comfy_kitchen_rope(True) as autograd_rope_summary,
+            ):
                 LOGGER.info("Anima slider gradient checkpointing: %s", gradient_checkpointing_summary)
+                LOGGER.info("Anima slider autograd-safe comfy_kitchen RoPE: %s", autograd_rope_summary)
                 for step in range(request.steps):
                     record = train_records[step % len(train_records)]
                     step_seed = request.seed + step if request.vary_seed else request.seed
@@ -977,6 +1083,7 @@ def train_lora_from_records(model, records: list[AnimaPromptConds], request: Tra
             "anima_text_adapter_precompute": text_adapter_summary,
             "cuda_memory_after_text_precompute": cuda_memory_after_text_precompute,
             "gradient_checkpointing": gradient_checkpointing_summary,
+            "autograd_safe_comfy_kitchen_rope": autograd_rope_summary,
             "skip_initial_eval": request.skip_initial_eval,
             "skip_final_eval": request.skip_final_eval,
             "num_inference_steps": request.num_inference_steps,
