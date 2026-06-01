@@ -22,7 +22,7 @@ ComfyUI を再起動すると、`training/anima slider` に `Train Anima Slider 
 - `VAE`: ワークフロー互換用の入力。現在の text-only loss では画像 encode には使いません
 - `prompt_yaml`: 同梱 `prompts/*.yaml` から選択
 - `custom_prompt_yaml_path`: 任意の YAML を直接指定する場合に使用
-- `steps`, `lr`, `rank`, `alpha`, `network_preset`, `model_residency`, `width`, `height` などの学習設定
+- `steps`, `lr`, `rank`, `alpha`, `network_preset`, `model_residency`, `lora_weight_dtype`, `width`, `height` などの学習設定
 
 出力:
 
@@ -36,6 +36,8 @@ LoRA と report は ComfyUI の output directory 配下に保存されます。`
 ## 16GB VRAM向けの確認手順
 
 16GB VRAMで高解像度学習を狙う場合は、`network_preset=attn_mlp` を維持し、`model_residency=prefer_cuda` と `gradient_checkpointing=True` を基本設定にしてください。`dynamic` はCUDA常駐が失敗する場合の最後の手段です。
+
+`lora_weight_dtype` は既定の `fp32` を推奨します。`auto` も fp32 の trainable LoRA weight を使います。VRAM をさらに削りたい場合だけ `base` または `bf16` を試してください。ただし bf16 LoRA weight は小さい学習率の更新が丸めで消えやすく、品質確認が必須です。
 
 推奨する切り分け順:
 
@@ -70,5 +72,6 @@ YAML は list 形式です。
 - `MODEL` に LoRA wrapper を一時注入しますが、学習終了時に元の linear module へ戻します。
 - `steps` の既定値は `600` です。短い smoke 確認だけ行う場合は、一時的に `steps=3`, `width=512`, `height=512`, `prompt_indices=0,1,2,3` 程度まで下げてください。
 - `model_residency=prefer_cuda` は ComfyUI のロード後に base model を CUDA へ寄せる best-effort 設定です。OOM になる環境では `dynamic` に戻してください。
+- `lora_weight_dtype=base` は旧挙動に近く、base model が bf16 なら LoRA weight も bf16 になります。sd-scripts の通常の Anima LoRA 学習に寄せるなら `fp32` を使ってください。
 - 16GB VRAMで1024x1024を狙う場合も、LoRA対象を `attn_only` へ削るのではなく、まず `attn_mlp` と `gradient_checkpointing=True` の組み合わせで確認してください。
 - bundled prompt のうち年齢語を含む YAML は `allow_unsafe_age_terms=True` が必要な場合があります。

@@ -11,6 +11,7 @@ import torch
 
 T = TypeVar("T")
 LORA_WEIGHT_DTYPES = {torch.float16, torch.bfloat16, torch.float32}
+LORA_WEIGHT_DTYPE_MODES = {"auto", "base", "fp32", "bf16"}
 
 
 @dataclass(frozen=True)
@@ -32,8 +33,18 @@ def lora_dtype_for_base_weight(weight: torch.Tensor) -> torch.dtype:
     return weight.dtype if weight.dtype in LORA_WEIGHT_DTYPES else torch.float32
 
 
+def resolve_lora_weight_dtype(weight: torch.Tensor, mode: str = "fp32") -> torch.dtype:
+    if mode not in LORA_WEIGHT_DTYPE_MODES:
+        raise ValueError(f"Unsupported lora_weight_dtype: {mode!r}")
+    if mode == "bf16":
+        return torch.bfloat16
+    if mode == "base":
+        return lora_dtype_for_base_weight(weight)
+    return torch.float32
+
+
 class LoRALinear(torch.nn.Module):
-    def __init__(self, base_linear: torch.nn.Linear, rank: int, alpha: float):
+    def __init__(self, base_linear: torch.nn.Linear, rank: int, alpha: float, weight_dtype: str = "fp32"):
         super().__init__()
         if rank <= 0:
             raise ValueError("rank must be positive")
@@ -45,9 +56,10 @@ class LoRALinear(torch.nn.Module):
 
         weight = base_linear.weight
         out_dim, in_dim = weight.shape
-        lora_dtype = lora_dtype_for_base_weight(weight)
+        lora_dtype = resolve_lora_weight_dtype(weight, weight_dtype)
         self.lora_down = torch.nn.Linear(in_dim, rank, bias=False, device=weight.device, dtype=lora_dtype)
         self.lora_up = torch.nn.Linear(rank, out_dim, bias=False, device=weight.device, dtype=lora_dtype)
+        self.weight_dtype_mode = weight_dtype
         self.scale = alpha / rank
         self.rank = rank
         self.alpha = alpha
@@ -64,6 +76,13 @@ class LoRALinear(torch.nn.Module):
         lora_input = x if x.dtype == self.lora_down.weight.dtype else x.to(dtype=self.lora_down.weight.dtype)
         lora_out = self.lora_up(self.lora_down(lora_input)) * self.scale * self.multiplier
         return base_out + lora_out.to(dtype=base_out.dtype)
+
+    def cast_lora_weights(self, weight_dtype: str) -> torch.dtype:
+        lora_dtype = resolve_lora_weight_dtype(self.base.weight, weight_dtype)
+        self.lora_down.to(device=self.base.weight.device, dtype=lora_dtype)
+        self.lora_up.to(device=self.base.weight.device, dtype=lora_dtype)
+        self.weight_dtype_mode = weight_dtype
+        return lora_dtype
 
 
 def _candidate_names(module_name: str) -> list[str]:
@@ -148,6 +167,7 @@ def inject_lora_linear_modules(
     rank: int,
     alpha: float,
     reg_dims: Mapping[str, int] | None = None,
+    weight_dtype: str = "fp32",
 ) -> tuple[list[InjectedLora], list[RestoredModule]]:
     injected = []
     restore = []
@@ -155,11 +175,27 @@ def inject_lora_linear_modules(
         parent, attribute = _get_parent_module(model, name)
         base = getattr(parent, attribute)
         module_rank = regex_value_for_module(name, reg_dims, rank)
-        wrapped = LoRALinear(base, rank=module_rank, alpha=alpha)
+        wrapped = LoRALinear(base, rank=module_rank, alpha=alpha, weight_dtype=weight_dtype)
         setattr(parent, attribute, wrapped)
         restore.append(RestoredModule(parent=parent, attribute=attribute, base=base))
         injected.append(InjectedLora(module_name=name, lora_key=lora_key_for_module(name), rank=module_rank, alpha=alpha))
     return injected, restore
+
+
+def cast_lora_weight_dtype(model: torch.nn.Module, weight_dtype: str) -> dict[str, object]:
+    dtypes: dict[str, int] = {}
+    module_count = 0
+    for module in model.modules():
+        if not isinstance(module, LoRALinear):
+            continue
+        dtype = module.cast_lora_weights(weight_dtype)
+        dtypes[str(dtype).removeprefix("torch.")] = dtypes.get(str(dtype).removeprefix("torch."), 0) + 1
+        module_count += 1
+    return {
+        "mode": weight_dtype,
+        "modules": module_count,
+        "dtypes": [{"key": key, "count": dtypes[key]} for key in sorted(dtypes)],
+    }
 
 
 def restore_linear_modules(restore: list[RestoredModule]) -> None:

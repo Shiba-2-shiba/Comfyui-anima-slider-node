@@ -172,12 +172,20 @@ class TrainingUtilTests(unittest.TestCase):
 
         self.assertIs(model.diffusion_model.blocks[0].self_attn.q_proj, original)
 
-    def test_lora_linear_uses_base_weight_dtype(self):
+    def test_lora_linear_defaults_to_float32_trainable_weights(self):
+        base = torch.nn.Linear(3, 4, bias=False, dtype=torch.bfloat16)
+
+        wrapped = lora_network.LoRALinear(base, rank=2, alpha=2.0)
+
+        self.assertEqual(wrapped.lora_down.weight.dtype, torch.float32)
+        self.assertEqual(wrapped.lora_up.weight.dtype, torch.float32)
+
+    def test_lora_linear_base_mode_uses_base_weight_dtype(self):
         for dtype in (torch.float16, torch.bfloat16, torch.float32):
             with self.subTest(dtype=dtype):
                 base = torch.nn.Linear(3, 4, bias=False, dtype=dtype)
 
-                wrapped = lora_network.LoRALinear(base, rank=2, alpha=2.0)
+                wrapped = lora_network.LoRALinear(base, rank=2, alpha=2.0, weight_dtype="base")
 
                 self.assertEqual(wrapped.lora_down.weight.dtype, dtype)
                 self.assertEqual(wrapped.lora_up.weight.dtype, dtype)
@@ -185,8 +193,49 @@ class TrainingUtilTests(unittest.TestCase):
     def test_lora_linear_falls_back_to_float32_for_unsupported_base_dtype(self):
         base = torch.nn.Linear(3, 4, bias=False, dtype=torch.float64)
 
-        wrapped = lora_network.LoRALinear(base, rank=2, alpha=2.0)
+        wrapped = lora_network.LoRALinear(base, rank=2, alpha=2.0, weight_dtype="base")
 
+        self.assertEqual(wrapped.lora_down.weight.dtype, torch.float32)
+        self.assertEqual(wrapped.lora_up.weight.dtype, torch.float32)
+
+    def test_lora_linear_bf16_mode_forces_bfloat16(self):
+        base = torch.nn.Linear(3, 4, bias=False, dtype=torch.float32)
+
+        wrapped = lora_network.LoRALinear(base, rank=2, alpha=2.0, weight_dtype="bf16")
+
+        self.assertEqual(wrapped.lora_down.weight.dtype, torch.bfloat16)
+        self.assertEqual(wrapped.lora_up.weight.dtype, torch.bfloat16)
+
+    def test_lora_linear_auto_mode_uses_float32(self):
+        base = torch.nn.Linear(3, 4, bias=False, dtype=torch.bfloat16)
+
+        wrapped = lora_network.LoRALinear(base, rank=2, alpha=2.0, weight_dtype="auto")
+
+        self.assertEqual(wrapped.lora_down.weight.dtype, torch.float32)
+        self.assertEqual(wrapped.lora_up.weight.dtype, torch.float32)
+
+    def test_lora_linear_rejects_unknown_weight_dtype(self):
+        base = torch.nn.Linear(3, 4, bias=False)
+
+        with self.assertRaisesRegex(ValueError, "Unsupported lora_weight_dtype"):
+            lora_network.LoRALinear(base, rank=2, alpha=2.0, weight_dtype="unknown")
+
+    def test_cast_lora_weight_dtype_reapplies_dtype_after_model_move(self):
+        model = FakeDiffusion()
+        lora_network.inject_lora_linear_modules(
+            model,
+            include_patterns=["model.diffusion_model.blocks.*.self_attn.*_proj"],
+            exclude_patterns=[],
+            rank=2,
+            alpha=2.0,
+            weight_dtype="fp32",
+        )
+        model.to(dtype=torch.bfloat16)
+
+        summary = lora_network.cast_lora_weight_dtype(model, "fp32")
+        wrapped = model.diffusion_model.blocks[0].self_attn.q_proj
+
+        self.assertEqual(summary["dtypes"], [{"key": "float32", "count": 1}])
         self.assertEqual(wrapped.lora_down.weight.dtype, torch.float32)
         self.assertEqual(wrapped.lora_up.weight.dtype, torch.float32)
 

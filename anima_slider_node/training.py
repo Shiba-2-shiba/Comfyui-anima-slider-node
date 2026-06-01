@@ -52,6 +52,7 @@ class TrainRequest:
     reg_dims: dict[str, int]
     reg_lrs: dict[str, float]
     model_residency: str
+    lora_weight_dtype: str = "fp32"
     gradient_checkpointing: bool = True
     skip_initial_eval: bool = False
     skip_final_eval: bool = False
@@ -844,6 +845,7 @@ def train_lora_from_records(model, records: list[AnimaPromptConds], request: Tra
             rank=request.rank,
             alpha=request.alpha,
             reg_dims=request.reg_dims,
+            weight_dtype=request.lora_weight_dtype,
         )
         if not injected:
             raise RuntimeError("No LoRA targets matched the configured include/exclude patterns")
@@ -857,10 +859,13 @@ def train_lora_from_records(model, records: list[AnimaPromptConds], request: Tra
         comfy.model_management.load_models_gpu([mp], force_full_load=True)
         materialization_summary = materialize_inference_tensors_for_training(mp.model)
         LOGGER.info("Anima slider training tensor materialization: %s", materialization_summary)
+        lora_dtype_summary = lora_network.cast_lora_weight_dtype(mp.model, request.lora_weight_dtype)
+        LOGGER.info("Anima slider LoRA weight dtype: %s", lora_dtype_summary)
         lora_trainable_summary = set_lora_parameters_trainable(mp.model, True)
         LOGGER.info("Anima slider LoRA trainable parameters restored: %s", lora_trainable_summary)
         residency_summary = promote_model_residency(mp.model, device, request.model_residency)
         if residency_summary.get("promoted"):
+            lora_dtype_summary = lora_network.cast_lora_weight_dtype(mp.model, request.lora_weight_dtype)
             lora_trainable_summary = set_lora_parameters_trainable(mp.model, True)
         LOGGER.info("Anima slider model residency attempt: %s", residency_summary)
         model_placement_summary = parameter_placement_diagnostics(mp.model)
@@ -1077,6 +1082,7 @@ def train_lora_from_records(model, records: list[AnimaPromptConds], request: Tra
             "comfyui_training_tensor_materialization": materialization_summary,
             "lora_trainable_parameters": lora_trainable_summary,
             "model_residency": residency_summary,
+            "lora_weight_dtype": lora_dtype_summary,
             "model_placement_after_setup": model_placement_summary,
             "lora_placement_after_setup": lora_placement_summary,
             "cuda_memory_after_setup": cuda_memory_after_setup,
