@@ -15,8 +15,8 @@ from .anima_slider_node import conditioning, config, prompt_util, training
 PACKAGE_ROOT = Path(__file__).resolve().parent
 PROMPTS_DIR = PACKAGE_ROOT / "prompts"
 PROMPT_FILES = sorted(path.name for path in PROMPTS_DIR.glob("*.yaml"))
-DEFAULT_PROMPT = "prompts-anima-age_slider_v2.yaml" if "prompts-anima-age_slider_v2.yaml" in PROMPT_FILES else (PROMPT_FILES[0] if PROMPT_FILES else "")
-DEFAULT_STEPS = 600
+DEFAULT_PROMPT = "prompts-anima-breast_size_slider.yaml" if "prompts-anima-breast_size_slider.yaml" in PROMPT_FILES else (PROMPT_FILES[0] if PROMPT_FILES else "")
+DEFAULT_STEPS = 400
 
 
 def _resolve_prompt_path(prompt_yaml: str, custom_prompt_yaml_path: str) -> Path:
@@ -74,8 +74,8 @@ class AnimaSliderTrainLoraNode(io.ComfyNode):
                     default="",
                     tooltip="Optional absolute or ComfyUI-working-directory-relative YAML path. Overrides prompt_yaml when set.",
                 ),
-                io.String.Input("prompt_indices", default="0,1,2,3", tooltip="Comma-separated prompt indices to cycle during training."),
-                io.String.Input("eval_prompt_indices", default="", tooltip="Comma-separated prompt indices for before/after eval. Empty uses prompt_indices."),
+                io.String.Input("prompt_indices", default="0,1,2,3,4,5,6,7", tooltip="Comma-separated prompt indices to cycle during training."),
+                io.String.Input("eval_prompt_indices", default="0,1,2,3,4,5,6,7", tooltip="Comma-separated prompt indices for before/after eval. Empty uses prompt_indices."),
                 io.Int.Input("steps", default=DEFAULT_STEPS, min=1, max=100000, tooltip="Training optimizer steps."),
                 io.Float.Input("lr", default=0.000005, min=0.0, max=1.0, step=0.0000001, tooltip="Fallback LoRA learning rate."),
                 io.Int.Input("rank", default=16, min=1, max=256, tooltip="Fallback LoRA rank."),
@@ -86,27 +86,27 @@ class AnimaSliderTrainLoraNode(io.ComfyNode):
                 io.Combo.Input("model_residency", options=["prefer_cuda", "dynamic"], default="prefer_cuda", tooltip="Best-effort base model residency after ComfyUI loading. Falls back to DynamicVRAM behavior if CUDA promotion fails."),
                 io.Combo.Input("lora_weight_dtype", options=["fp32", "auto", "base", "bf16"], default="fp32", tooltip="Trainable LoRA weight dtype. fp32 is recommended; base/bf16 reduce VRAM but may lose small updates."),
                 io.Boolean.Input("gradient_checkpointing", default=True, tooltip="Checkpoint trainable diffusion blocks during LoRA training to reduce activation VRAM."),
-                io.Boolean.Input("skip_initial_eval", default=False, tooltip="Skip the pre-training eval pass for OOM isolation. Not a quality substitute."),
+                io.Boolean.Input("skip_initial_eval", default=True, tooltip="Skip the pre-training eval pass for OOM isolation. Not a quality substitute."),
                 io.Boolean.Input("skip_final_eval", default=False, tooltip="Skip the post-training eval pass for OOM isolation. Not a quality substitute."),
-                io.Int.Input("width", default=512, min=16, max=4096, step=16, tooltip="Training latent width in pixels."),
-                io.Int.Input("height", default=512, min=16, max=4096, step=16, tooltip="Training latent height in pixels."),
+                io.Int.Input("width", default=1024, min=16, max=4096, step=16, tooltip="Training latent width in pixels."),
+                io.Int.Input("height", default=1024, min=16, max=4096, step=16, tooltip="Training latent height in pixels."),
                 io.Int.Input("num_inference_steps", default=20, min=3, max=200, tooltip="Number of simple scheduler sigmas."),
                 io.Combo.Input("timestep_sampling", options=["uniform", "mid", "early_late", "sigmoid", "shift", "flux_shift"], default="shift"),
                 io.Float.Input("sigmoid_scale", default=1.0, min=0.01, max=20.0, step=0.01),
                 io.Float.Input("discrete_flow_shift", default=3.0, min=0.01, max=20.0, step=0.01),
                 io.Combo.Input("loss_weighting_scheme", options=["none", "sigma_sqrt", "cosmap"], default="none"),
-                io.Combo.Input("direction_loss", options=["enhance_only", "bidirectional"], default="enhance_only"),
-                io.Float.Input("teacher_guidance_scale", default=1.0, min=0.0, max=20.0, step=0.01, tooltip="Multiplier applied to the positive-unconditional teacher direction."),
-                io.Combo.Input("teacher_norm_reference", options=["neutral", "positive", "target", "none"], default="neutral", tooltip="Output norm reference for the teacher signal. neutral usually makes stronger sliders less prone to scale blow-up."),
+                io.Combo.Input("direction_loss", options=["enhance_only", "bidirectional"], default="bidirectional"),
+                io.Float.Input("teacher_guidance_scale", default=2.0, min=0.0, max=20.0, step=0.01, tooltip="Multiplier applied to the positive-unconditional teacher direction."),
+                io.Combo.Input("teacher_norm_reference", options=["neutral", "positive", "target", "none"], default="positive", tooltip="Output norm reference for the teacher signal. neutral usually makes stronger sliders less prone to scale blow-up."),
                 io.Int.Input("min_step_index", default=-1, min=-1, max=10000, tooltip="-1 uses the default lower bound."),
                 io.Int.Input("max_step_index", default=-1, min=-1, max=10000, tooltip="-1 uses the default upper bound."),
                 io.String.Input("eval_step_indices", default="", tooltip="Comma-separated eval step indices. Empty uses midpoint."),
                 io.Float.Input("eta", default=1.0, min=0.0, max=20.0, step=0.01),
-                io.Int.Input("seed", default=961218314523996, min=0, max=0xFFFFFFFFFFFFFFFF),
+                io.Int.Input("seed", default=921209683060300, min=0, max=0xFFFFFFFFFFFFFFFF),
                 io.Int.Input("eval_seed", default=961218314523996, min=0, max=0xFFFFFFFFFFFFFFFF),
                 io.Boolean.Input("vary_seed", default=True),
-                io.Boolean.Input("allow_unsafe_age_terms", default=False),
-                io.String.Input("output_lora_prefix", default="loras/anima_slider", tooltip="Output prefix under the ComfyUI output directory."),
+                io.Boolean.Input("allow_unsafe_age_terms", default=True),
+                io.String.Input("output_lora_prefix", default="loras/anima_breast_slider", tooltip="Output prefix under the ComfyUI output directory."),
             ],
             outputs=[
                 io.Custom("LORA_MODEL").Output(display_name="lora"),
