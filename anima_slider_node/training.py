@@ -176,11 +176,12 @@ def build_lora_optimizer_param_groups(
         group = groups_by_key.setdefault(key, {"params": [], "lr": lr})
         summary = summaries_by_key.setdefault(
             key,
-            {"rule": rule, "lr": lr, "module_count": 0, "parameter_count": 0, "modules": []},
+            {"rule": rule, "lr": lr, "module_count": 0, "parameter_count": 0, "sample_modules": []},
         )
         summary["module_count"] += 1
         summary["parameter_count"] += sum(parameter.numel() for parameter in params)
-        summary["modules"].append(lora_network.lora_key_for_module(name))
+        if len(summary["sample_modules"]) < 12:
+            summary["sample_modules"].append(lora_network.lora_key_for_module(name))
 
         for parameter in params:
             parameter_id = id(parameter)
@@ -278,7 +279,7 @@ def tensor_autograd_debug(tensor: torch.Tensor) -> dict[str, object]:
     }
 
 
-def lora_grad_path_summary(model: torch.nn.Module) -> dict[str, object]:
+def lora_grad_path_summary(model: torch.nn.Module, include_samples: bool = True) -> dict[str, object]:
     modules = []
     module_count = 0
     trainable_parameter_count = 0
@@ -298,7 +299,7 @@ def lora_grad_path_summary(model: torch.nn.Module) -> dict[str, object]:
         for parameter in trainable_params:
             devices[str(parameter.device)] += 1
             dtypes[str(parameter.dtype)] += 1
-        if len(modules) < 8:
+        if include_samples and len(modules) < 8:
             modules.append(
                 {
                     "name": name,
@@ -319,6 +320,19 @@ def lora_grad_path_summary(model: torch.nn.Module) -> dict[str, object]:
         "trainable_dtypes": dict(dtypes),
         "sample_modules": modules,
     }
+
+
+def ensure_lora_trainable(model: torch.nn.Module) -> None:
+    summary = lora_grad_path_summary(model)
+    if summary["module_count"] == 0:
+        raise RuntimeError("No LoRA modules were injected")
+    if summary["trainable_parameter_count"] == 0:
+        LOGGER.error("No trainable Anima LoRA parameters remain after setup: %s", summary)
+        raise RuntimeError(
+            "No trainable LoRA parameters remain after model setup. "
+            "Load/materialize the ComfyUI model before injecting LoRA modules. "
+            f"Diagnostics: {summary}"
+        )
 
 
 def ensure_training_loss_is_differentiable(patcher, loss: torch.Tensor, raw_loss: torch.Tensor, model_pred: torch.Tensor) -> None:
@@ -497,6 +511,15 @@ def train_lora_from_records(model, records: list[AnimaPromptConds], request: Tra
     restore = []
     lora_sd: dict[str, torch.Tensor] = {}
     try:
+        device = mp.load_device
+        image_seq_len = (request.height // 16) * (request.width // 16)
+
+        import comfy.model_management  # type: ignore
+
+        comfy.model_management.load_models_gpu([mp], force_full_load=True)
+        materialization_summary = materialize_inference_tensors_for_training(mp.model)
+        LOGGER.info("Anima slider training tensor materialization: %s", materialization_summary)
+
         freeze_parameters(mp.model)
         injected, restore = lora_network.inject_lora_linear_modules(
             mp.model,
@@ -508,6 +531,7 @@ def train_lora_from_records(model, records: list[AnimaPromptConds], request: Tra
         )
         if not injected:
             raise RuntimeError("No LoRA targets matched the configured include/exclude patterns")
+        ensure_lora_trainable(mp.model)
 
         optimizer_param_groups, optimizer_group_summary = build_lora_optimizer_param_groups(
             mp.model,
@@ -519,16 +543,8 @@ def train_lora_from_records(model, records: list[AnimaPromptConds], request: Tra
             "Anima LoRA injection summary: injected_targets=%s optimizer_groups=%s grad_path=%s",
             len(injected),
             optimizer_group_summary,
-            lora_grad_path_summary(mp.model),
+            lora_grad_path_summary(mp.model, include_samples=True),
         )
-        device = mp.load_device
-        image_seq_len = (request.height // 16) * (request.width // 16)
-
-        import comfy.model_management  # type: ignore
-
-        comfy.model_management.load_models_gpu([mp], force_full_load=True)
-        materialization_summary = materialize_inference_tensors_for_training(mp.model)
-        LOGGER.info("Anima slider training tensor materialization: %s", materialization_summary)
         with lora_network.lora_enabled(mp.model, False):
             records, text_adapter_summary = anima_forward.precompute_anima_text_adapter_records(mp, records)
         LOGGER.info("Anima text adapter precompute: %s", text_adapter_summary)

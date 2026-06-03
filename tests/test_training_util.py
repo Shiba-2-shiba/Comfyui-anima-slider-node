@@ -50,6 +50,15 @@ class FakeDetachedPatcher:
         self.model = DetachedApplyModel()
 
 
+class FreezingLoadPatcher:
+    def __init__(self):
+        self.model = FakeDiffusion()
+
+    def load_models_gpu(self):
+        for parameter in self.model.parameters():
+            parameter.requires_grad_(False)
+
+
 class TrainingUtilTests(unittest.TestCase):
     def test_parse_indices_uses_fallback_when_missing(self):
         self.assertEqual(training.parse_indices("", 7), [7])
@@ -118,6 +127,45 @@ class TrainingUtilTests(unittest.TestCase):
 
         self.assertEqual([group["lr"] for group in groups], [0.00001, 0.0001])
         self.assertEqual([item["module_count"] for item in summary], [1, 1])
+
+    def test_injecting_after_model_load_keeps_lora_trainable(self):
+        patcher = FreezingLoadPatcher()
+        patcher.load_models_gpu()
+        training.freeze_parameters(patcher.model)
+
+        injected, restore = lora_network.inject_lora_linear_modules(
+            patcher.model,
+            include_patterns=["model.diffusion_model.blocks.*.self_attn.*_proj"],
+            exclude_patterns=[],
+            rank=2,
+            alpha=2.0,
+        )
+
+        try:
+            self.assertEqual(len(injected), 1)
+            training.ensure_lora_trainable(patcher.model)
+            summary = training.lora_grad_path_summary(patcher.model, include_samples=False)
+            self.assertEqual(summary["trainable_parameter_count"], 2)
+            self.assertGreater(summary["trainable_element_count"], 0)
+        finally:
+            lora_network.restore_linear_modules(restore)
+
+    def test_trainable_guard_reports_frozen_lora_parameters(self):
+        model = FakeDiffusion()
+        lora_network.inject_lora_linear_modules(
+            model,
+            include_patterns=["model.diffusion_model.blocks.*.self_attn.*_proj"],
+            exclude_patterns=[],
+            rank=2,
+            alpha=2.0,
+        )
+        for parameter in model.parameters():
+            parameter.requires_grad_(False)
+
+        with self.assertLogs(training.LOGGER, level="ERROR") as logs:
+            with self.assertRaisesRegex(RuntimeError, "No trainable LoRA parameters remain"):
+                training.ensure_lora_trainable(model)
+        self.assertIn("No trainable Anima LoRA parameters remain", logs.output[0])
 
     def test_materialize_inference_tensors_allows_autograd_through_frozen_linear(self):
         linear = torch.nn.Linear(3, 4, bias=False)
