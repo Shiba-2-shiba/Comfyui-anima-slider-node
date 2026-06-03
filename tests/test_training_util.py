@@ -106,6 +106,34 @@ class TrainingUtilTests(unittest.TestCase):
 
         self.assertIs(model.diffusion_model.blocks[0].self_attn.q_proj, original)
 
+    def test_lora_linear_aligns_trainable_weights_to_input_device(self):
+        base = torch.nn.Linear(3, 4, bias=False)
+        wrapped = lora_network.LoRALinear(base, rank=2, alpha=2.0)
+        x = torch.randn(2, 3, device="meta")
+
+        output = wrapped(x)
+
+        self.assertEqual(output.device.type, "meta")
+        self.assertEqual(wrapped.lora_down.weight.device.type, "meta")
+        self.assertEqual(wrapped.lora_up.weight.device.type, "meta")
+        self.assertTrue(wrapped.lora_down.weight.requires_grad)
+        self.assertTrue(wrapped.lora_up.weight.requires_grad)
+
+    @unittest.skipUnless(torch.cuda.is_available(), "CUDA is required for the runtime LoRA device mismatch regression")
+    def test_lora_linear_handles_cpu_weights_with_cuda_input(self):
+        base = torch.nn.Linear(3, 4, bias=False).to("cuda")
+        wrapped = lora_network.LoRALinear(torch.nn.Linear(3, 4, bias=False), rank=2, alpha=2.0)
+        wrapped.base = base
+        x = torch.randn(2, 3, device="cuda")
+
+        output = wrapped(x)
+        output.sum().backward()
+
+        self.assertEqual(output.device.type, "cuda")
+        self.assertEqual(wrapped.lora_down.weight.device.type, "cuda")
+        self.assertEqual(wrapped.lora_up.weight.device.type, "cuda")
+        self.assertIsNotNone(wrapped.lora_down.weight.grad)
+
     def test_build_lora_optimizer_param_groups_applies_regex_lrs(self):
         model = FakeDiffusion()
         lora_network.inject_lora_linear_modules(
