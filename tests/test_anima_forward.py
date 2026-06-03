@@ -44,6 +44,10 @@ class InferenceWeightLinear(torch.nn.Linear):
     pass
 
 
+class InferenceWeightEmbedding(torch.nn.Embedding):
+    pass
+
+
 class FrozenThenTrainable(torch.nn.Module):
     def __init__(self):
         super().__init__()
@@ -115,6 +119,33 @@ class AnimaForwardTests(unittest.TestCase):
 
         self.assertFalse(output.is_inference())
         self.assertEqual(output.shape, (1, 2))
+
+    def test_safe_text_adapter_ops_aligns_embedding_weight_to_input_device(self):
+        module = InferenceWeightEmbedding(8, 3)
+        with torch.inference_mode():
+            module.weight = torch.nn.Parameter(module.weight.detach().clone(), requires_grad=False)
+
+        input_tensor = torch.arange(3, device="meta", dtype=torch.long)
+
+        with anima_forward.safe_text_adapter_ops(module), torch.no_grad():
+            output = module(input_tensor)
+
+        self.assertEqual(output.device.type, "meta")
+        self.assertEqual(output.shape, (3, 3))
+
+    @unittest.skipUnless(torch.cuda.is_available(), "CUDA is required for the runtime device mismatch regression")
+    def test_safe_text_adapter_ops_handles_cpu_embedding_weight_with_cuda_ids(self):
+        module = InferenceWeightEmbedding(8, 3)
+        with torch.inference_mode():
+            module.weight = torch.nn.Parameter(module.weight.detach().cpu().clone(), requires_grad=False)
+
+        input_tensor = torch.arange(3, device="cuda", dtype=torch.long)
+
+        with anima_forward.safe_text_adapter_ops(module), torch.no_grad():
+            output = module(input_tensor)
+
+        self.assertEqual(output.device.type, "cuda")
+        self.assertEqual(output.shape, (3, 3))
 
     def test_safe_frozen_model_ops_preserves_grad_through_frozen_linear_and_skips_trainable(self):
         module = FrozenThenTrainable()

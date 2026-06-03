@@ -151,16 +151,13 @@ def normalize_inference_module_inputs(module: torch.nn.Module):
             handle.remove()
 
 
-def _safe_tensor_for_no_grad_op(tensor: torch.Tensor | None) -> torch.Tensor | None:
+def _safe_frozen_weight(tensor: torch.Tensor | None, device: torch.device | str | None = None) -> torch.Tensor | None:
     if tensor is None:
         return None
-    return normal_detached_tensor(tensor)
-
-
-def _safe_frozen_weight(tensor: torch.Tensor | None) -> torch.Tensor | None:
-    if tensor is None:
-        return None
-    return normal_detached_tensor(tensor)
+    safe = normal_detached_tensor(tensor)
+    if device is not None and safe.device != torch.device(device):
+        safe = safe.to(device=device)
+    return safe
 
 
 def _safe_forward_input(tensor: torch.Tensor) -> torch.Tensor:
@@ -187,8 +184,8 @@ def _tensor_debug(tensor: torch.Tensor | None) -> dict[str, object] | None:
 
 def _safe_linear_forward(self, input):
     safe_input = _safe_forward_input(input)
-    safe_weight = _safe_frozen_weight(self.weight)
-    safe_bias = _safe_frozen_weight(self.bias)
+    safe_weight = _safe_frozen_weight(self.weight, device=safe_input.device)
+    safe_bias = _safe_frozen_weight(self.bias, device=safe_input.device)
     try:
         return F.linear(safe_input, safe_weight, safe_bias)
     except RuntimeError:
@@ -205,35 +202,75 @@ def _safe_linear_forward(self, input):
 
 
 def _safe_embedding_forward(self, input, out_dtype=None):
-    output = F.embedding(
-        input,
-        _safe_frozen_weight(self.weight),
-        self.padding_idx,
-        self.max_norm,
-        self.norm_type,
-        self.scale_grad_by_freq,
-        self.sparse,
-    )
-    return output.to(dtype=out_dtype) if out_dtype is not None else output
+    safe_input = _safe_forward_input(input)
+    safe_weight = _safe_frozen_weight(self.weight, device=safe_input.device)
+    try:
+        output = F.embedding(
+            safe_input,
+            safe_weight,
+            self.padding_idx,
+            self.max_norm,
+            self.norm_type,
+            self.scale_grad_by_freq,
+            self.sparse,
+        )
+        return output.to(dtype=out_dtype) if out_dtype is not None else output
+    except RuntimeError:
+        LOGGER.exception(
+            "Safe Anima text adapter embedding failed: input=%s weight=%s safe_input=%s safe_weight=%s out_dtype=%s",
+            _tensor_debug(input),
+            _tensor_debug(self.weight),
+            _tensor_debug(safe_input),
+            _tensor_debug(safe_weight),
+            out_dtype,
+        )
+        raise
 
 
 def _safe_layer_norm_forward(self, input):
-    return F.layer_norm(
-        _safe_forward_input(input),
-        self.normalized_shape,
-        _safe_frozen_weight(self.weight),
-        _safe_frozen_weight(self.bias),
-        self.eps,
-    )
+    safe_input = _safe_forward_input(input)
+    safe_weight = _safe_frozen_weight(self.weight, device=safe_input.device)
+    safe_bias = _safe_frozen_weight(self.bias, device=safe_input.device)
+    try:
+        return F.layer_norm(
+            safe_input,
+            self.normalized_shape,
+            safe_weight,
+            safe_bias,
+            self.eps,
+        )
+    except RuntimeError:
+        LOGGER.exception(
+            "Safe Anima text adapter layer_norm failed: input=%s weight=%s bias=%s safe_input=%s safe_weight=%s safe_bias=%s",
+            _tensor_debug(input),
+            _tensor_debug(self.weight),
+            _tensor_debug(self.bias),
+            _tensor_debug(safe_input),
+            _tensor_debug(safe_weight),
+            _tensor_debug(safe_bias),
+        )
+        raise
 
 
 def _safe_rms_norm_forward(self, input):
-    return F.rms_norm(
-        _safe_forward_input(input),
-        self.normalized_shape,
-        _safe_frozen_weight(self.weight),
-        self.eps,
-    )
+    safe_input = _safe_forward_input(input)
+    safe_weight = _safe_frozen_weight(self.weight, device=safe_input.device)
+    try:
+        return F.rms_norm(
+            safe_input,
+            self.normalized_shape,
+            safe_weight,
+            self.eps,
+        )
+    except RuntimeError:
+        LOGGER.exception(
+            "Safe Anima text adapter rms_norm failed: input=%s weight=%s safe_input=%s safe_weight=%s",
+            _tensor_debug(input),
+            _tensor_debug(self.weight),
+            _tensor_debug(safe_input),
+            _tensor_debug(safe_weight),
+        )
+        raise
 
 
 def _module_has_trainable_parameters(module: torch.nn.Module) -> bool:
