@@ -10,6 +10,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT))
 
 from anima_slider_node import lora_network, training
+from anima_slider_node.conditioning import AnimaCond
 
 
 class Block(torch.nn.Module):
@@ -26,6 +27,27 @@ class FakeDiffusion(torch.nn.Module):
         super().__init__()
         self.diffusion_model = torch.nn.Module()
         self.diffusion_model.blocks = torch.nn.ModuleList([Block()])
+
+
+class DetachedApplyModel(torch.nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.diffusion_model = torch.nn.Module()
+
+    def get_dtype_inference(self):
+        return torch.float32
+
+    @torch.no_grad()
+    def apply_model(self, latent, sigma, **kwargs):
+        del sigma, kwargs
+        return latent * 2
+
+
+class FakeDetachedPatcher:
+    load_device = "cpu"
+
+    def __init__(self):
+        self.model = DetachedApplyModel()
 
 
 class TrainingUtilTests(unittest.TestCase):
@@ -110,6 +132,28 @@ class TrainingUtilTests(unittest.TestCase):
         self.assertEqual(summary["materialized_parameters"], 1)
         self.assertFalse(linear.weight.is_inference())
         self.assertIsNotNone(x.grad)
+
+    def test_branch_loss_reports_when_model_output_is_not_differentiable(self):
+        patcher = FakeDetachedPatcher()
+        cond = AnimaCond(cond=torch.zeros(1, 2, 3), pooled=None, extra={})
+        latent = torch.ones(1, 1, 2, 2)
+        sigma = torch.ones(1)
+        teacher = torch.zeros_like(latent)
+        loss_weight = torch.ones(1)
+
+        with self.assertLogs(training.LOGGER, level="ERROR") as logs:
+            with self.assertRaisesRegex(RuntimeError, "Training loss is not connected to LoRA parameters"):
+                training.branch_loss_for_teacher(
+                    patcher,
+                    latent,
+                    sigma,
+                    cond,
+                    teacher,
+                    loss_weight,
+                    train=True,
+                    lora_multiplier=1.0,
+                )
+        self.assertIn("Anima LoRA training loss is not differentiable", logs.output[0])
 
 
 if __name__ == "__main__":

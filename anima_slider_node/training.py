@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections import Counter
+from contextlib import nullcontext
 from dataclasses import dataclass
 import logging
 import math
@@ -264,6 +265,82 @@ def tensor_norm(tensor: torch.Tensor) -> float:
     return float(tensor.detach().float().norm().cpu().item())
 
 
+def tensor_autograd_debug(tensor: torch.Tensor) -> dict[str, object]:
+    grad_fn = type(tensor.grad_fn).__name__ if tensor.grad_fn is not None else None
+    return {
+        "shape": list(tensor.shape),
+        "device": str(tensor.device),
+        "dtype": str(tensor.dtype),
+        "requires_grad": bool(tensor.requires_grad),
+        "is_leaf": bool(tensor.is_leaf),
+        "is_inference": bool(tensor.is_inference()),
+        "grad_fn": grad_fn,
+    }
+
+
+def lora_grad_path_summary(model: torch.nn.Module) -> dict[str, object]:
+    modules = []
+    module_count = 0
+    trainable_parameter_count = 0
+    trainable_element_count = 0
+    devices = Counter()
+    dtypes = Counter()
+    enabled_count = 0
+    for name, module in model.named_modules():
+        if not isinstance(module, lora_network.LoRALinear):
+            continue
+        module_count += 1
+        enabled_count += int(module.enabled)
+        params = list(module.lora_down.parameters()) + list(module.lora_up.parameters())
+        trainable_params = [parameter for parameter in params if parameter.requires_grad]
+        trainable_parameter_count += len(trainable_params)
+        trainable_element_count += sum(parameter.numel() for parameter in trainable_params)
+        for parameter in trainable_params:
+            devices[str(parameter.device)] += 1
+            dtypes[str(parameter.dtype)] += 1
+        if len(modules) < 8:
+            modules.append(
+                {
+                    "name": name,
+                    "enabled": bool(module.enabled),
+                    "rank": int(module.rank),
+                    "down_device": str(module.lora_down.weight.device),
+                    "up_device": str(module.lora_up.weight.device),
+                    "down_requires_grad": bool(module.lora_down.weight.requires_grad),
+                    "up_requires_grad": bool(module.lora_up.weight.requires_grad),
+                }
+            )
+    return {
+        "module_count": module_count,
+        "enabled_count": enabled_count,
+        "trainable_parameter_count": trainable_parameter_count,
+        "trainable_element_count": trainable_element_count,
+        "trainable_devices": dict(devices),
+        "trainable_dtypes": dict(dtypes),
+        "sample_modules": modules,
+    }
+
+
+def ensure_training_loss_is_differentiable(patcher, loss: torch.Tensor, raw_loss: torch.Tensor, model_pred: torch.Tensor) -> None:
+    if loss.requires_grad:
+        return
+    diagnostics = {
+        "grad_enabled": torch.is_grad_enabled(),
+        "inference_mode": torch.is_inference_mode_enabled(),
+        "loss": tensor_autograd_debug(loss),
+        "raw_loss": tensor_autograd_debug(raw_loss),
+        "model_pred": tensor_autograd_debug(model_pred),
+        "lora": lora_grad_path_summary(patcher.model),
+    }
+    LOGGER.error("Anima LoRA training loss is not differentiable: %s", diagnostics)
+    raise RuntimeError(
+        "Training loss is not connected to LoRA parameters. "
+        "The selected network_preset may not affect this model's active forward path, "
+        "or model.apply_model may be running under no-grad/inference mode. "
+        f"Diagnostics: {diagnostics}"
+    )
+
+
 def branch_loss_for_teacher(
     patcher,
     latent,
@@ -275,10 +352,13 @@ def branch_loss_for_teacher(
     lora_multiplier: float,
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     context = torch.enable_grad() if train else torch.no_grad()
-    with context, lora_network.lora_enabled(patcher.model, True), lora_network.lora_multiplier(patcher.model, lora_multiplier):
+    inference_context = torch.inference_mode(False) if train else nullcontext()
+    with inference_context, context, lora_network.lora_enabled(patcher.model, True), lora_network.lora_multiplier(patcher.model, lora_multiplier):
         model_pred = forward_role(patcher, latent, sigma, target_cond)
         raw_loss = F.mse_loss(model_pred.float(), teacher.float())
         loss = raw_loss * loss_weight.to(device=raw_loss.device)
+    if train:
+        ensure_training_loss_is_differentiable(patcher, loss, raw_loss, model_pred)
     return loss, raw_loss, model_pred
 
 
@@ -435,6 +515,12 @@ def train_lora_from_records(model, records: list[AnimaPromptConds], request: Tra
             reg_lrs=request.reg_lrs,
         )
         optimizer = torch.optim.AdamW(optimizer_param_groups, lr=request.lr)
+        LOGGER.info(
+            "Anima LoRA injection summary: injected_targets=%s optimizer_groups=%s grad_path=%s",
+            len(injected),
+            optimizer_group_summary,
+            lora_grad_path_summary(mp.model),
+        )
         device = mp.load_device
         image_seq_len = (request.height // 16) * (request.width // 16)
 
