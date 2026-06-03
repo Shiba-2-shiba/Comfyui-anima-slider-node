@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import sys
 from contextlib import contextmanager
 from dataclasses import replace
 from types import MethodType
@@ -15,6 +16,8 @@ from .tensor_util import normal_detached_cpu_tensor, normal_detached_tensor
 
 LOGGER = logging.getLogger(__name__)
 TEXT_ADAPTER_EXTRA_KEYS = {"t5xxl_ids", "t5xxl_weights"}
+ROPE_FUNCTION_NAMES = ("apply_rope", "apply_rope1", "apply_rope_split_half", "apply_rope_split_half1")
+_ROPE_PATCH_LOGGED = False
 
 
 def latent_shape_for_resolution(model_patcher: Any, width: int, height: int, batch_size: int = 1) -> tuple[int, ...]:
@@ -277,6 +280,76 @@ def _module_has_trainable_parameters(module: torch.nn.Module) -> bool:
     return any(parameter.requires_grad for parameter in module.parameters(recurse=False))
 
 
+def _module_name(module: Any) -> str:
+    return str(getattr(module, "__name__", ""))
+
+
+def _is_comfy_runtime_module(module: Any) -> bool:
+    name = _module_name(module)
+    return name.startswith("comfy.")
+
+
+@contextmanager
+def differentiable_comfy_kitchen_rope_ops():
+    summary: dict[str, Any] = {
+        "available": False,
+        "patched_modules": [],
+        "patched_functions": 0,
+    }
+    try:
+        import comfy_kitchen
+        from comfy_kitchen.backends.eager import rope as eager_rope
+    except Exception as exc:
+        summary["error"] = f"{type(exc).__name__}: {exc}"
+        yield summary
+        return
+
+    replacements = {
+        name: getattr(eager_rope, name)
+        for name in ROPE_FUNCTION_NAMES
+        if hasattr(comfy_kitchen, name) and hasattr(eager_rope, name)
+    }
+    originals = {name: getattr(comfy_kitchen, name) for name in replacements}
+    patched = []
+
+    def patch_attr(module: Any, name: str, replacement: Any):
+        current = getattr(module, name)
+        if current is replacement:
+            return
+        patched.append((module, name, current))
+        setattr(module, name, replacement)
+
+    for name, replacement in replacements.items():
+        patch_attr(comfy_kitchen, name, replacement)
+
+    for module in list(sys.modules.values()):
+        if module is None or module is comfy_kitchen or not _is_comfy_runtime_module(module):
+            continue
+        for name, original in originals.items():
+            if getattr(module, name, None) is original:
+                patch_attr(module, name, replacements[name])
+
+    patched_modules = sorted({_module_name(module) for module, _, _ in patched})
+    summary.update(
+        {
+            "available": bool(replacements),
+            "patched_modules": patched_modules,
+            "patched_functions": len(patched),
+        }
+    )
+
+    global _ROPE_PATCH_LOGGED
+    if patched and not _ROPE_PATCH_LOGGED:
+        LOGGER.info("Patched comfy_kitchen RoPE ops for differentiable Anima training: %s", summary)
+        _ROPE_PATCH_LOGGED = True
+
+    try:
+        yield summary
+    finally:
+        for module, name, original in reversed(patched):
+            setattr(module, name, original)
+
+
 @contextmanager
 def safe_text_adapter_ops(module: torch.nn.Module):
     patched = []
@@ -416,13 +489,14 @@ def apply_model_with_condition(
     dtype = model.get_dtype_inference()
     kwargs = condition_to_model_kwargs(cond, device=latent.device, dtype=dtype)
     diffusion_model = getattr(model, "diffusion_model", None)
-    with safe_frozen_model_ops(diffusion_model) as patched_counts:
+    with differentiable_comfy_kitchen_rope_ops() as rope_patch, safe_frozen_model_ops(diffusion_model) as patched_counts:
         try:
             return model.apply_model(latent, sigma.to(latent.device), **kwargs)
         except RuntimeError:
             LOGGER.exception(
-                "Anima model apply failed under safe frozen ops: patched=%s latent=%s sigma=%s cross_attn=%s extra=%s",
+                "Anima model apply failed under safe frozen ops: patched=%s rope_patch=%s latent=%s sigma=%s cross_attn=%s extra=%s",
                 patched_counts,
+                rope_patch,
                 _tensor_debug(latent),
                 _tensor_debug(sigma),
                 _tensor_debug(kwargs.get("c_crossattn")),

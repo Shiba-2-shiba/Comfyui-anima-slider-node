@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import sys
+import types
 import unittest
 from pathlib import Path
 
@@ -57,6 +58,65 @@ class FrozenThenTrainable(torch.nn.Module):
 
     def forward(self, x):
         return self.trainable(self.frozen(x))
+
+
+class TemporaryModules:
+    def __init__(self, modules):
+        self.modules = modules
+        self.originals = {}
+
+    def __enter__(self):
+        for name, module in self.modules.items():
+            self.originals[name] = sys.modules.get(name)
+            sys.modules[name] = module
+        return self.modules
+
+    def __exit__(self, exc_type, exc, tb):
+        for name in self.modules:
+            original = self.originals[name]
+            if original is None:
+                sys.modules.pop(name, None)
+            else:
+                sys.modules[name] = original
+
+
+def _build_fake_comfy_kitchen_modules():
+    def public_split_half(xq, xk, freqs_cis):
+        raise RuntimeError("custom op has no autograd formula")
+
+    def public_split_half1(x, freqs_cis):
+        raise RuntimeError("custom op has no autograd formula")
+
+    def eager_split_half(xq, xk, freqs_cis):
+        return xq * freqs_cis, xk * freqs_cis
+
+    def eager_split_half1(x, freqs_cis):
+        return x * freqs_cis
+
+    comfy_kitchen = types.ModuleType("comfy_kitchen")
+    comfy_kitchen.apply_rope_split_half = public_split_half
+    comfy_kitchen.apply_rope_split_half1 = public_split_half1
+
+    backends = types.ModuleType("comfy_kitchen.backends")
+    eager = types.ModuleType("comfy_kitchen.backends.eager")
+    rope = types.ModuleType("comfy_kitchen.backends.eager.rope")
+    rope.apply_rope_split_half = eager_split_half
+    rope.apply_rope_split_half1 = eager_split_half1
+    eager.rope = rope
+    backends.eager = eager
+    comfy_kitchen.backends = backends
+
+    predict2 = types.ModuleType("comfy.ldm.cosmos.predict2")
+    predict2.apply_rope_split_half = public_split_half
+    predict2.apply_rope_split_half1 = public_split_half1
+
+    return {
+        "comfy_kitchen": comfy_kitchen,
+        "comfy_kitchen.backends": backends,
+        "comfy_kitchen.backends.eager": eager,
+        "comfy_kitchen.backends.eager.rope": rope,
+        "comfy.ldm.cosmos.predict2": predict2,
+    }
 
 
 class FakePatcher:
@@ -161,6 +221,31 @@ class AnimaForwardTests(unittest.TestCase):
         self.assertIsNotNone(input_tensor.grad)
         self.assertIsNotNone(module.trainable.weight.grad)
         self.assertTrue(module.frozen.weight.is_inference())
+
+    def test_differentiable_rope_ops_patch_public_and_direct_bound_functions(self):
+        modules = _build_fake_comfy_kitchen_modules()
+        comfy_kitchen = modules["comfy_kitchen"]
+        rope = modules["comfy_kitchen.backends.eager.rope"]
+        predict2 = modules["comfy.ldm.cosmos.predict2"]
+        original_public = comfy_kitchen.apply_rope_split_half
+        original_direct_bound = predict2.apply_rope_split_half
+
+        with TemporaryModules(modules):
+            with anima_forward.differentiable_comfy_kitchen_rope_ops() as summary:
+                self.assertTrue(summary["available"])
+                self.assertIs(comfy_kitchen.apply_rope_split_half, rope.apply_rope_split_half)
+                self.assertIs(predict2.apply_rope_split_half, rope.apply_rope_split_half)
+
+                xq = torch.ones(1, requires_grad=True)
+                xk = torch.ones(1, requires_grad=True)
+                yq, yk = comfy_kitchen.apply_rope_split_half(xq, xk, torch.ones(1))
+                (yq.sum() + yk.sum()).backward()
+
+                self.assertIsNotNone(xq.grad)
+                self.assertIsNotNone(xk.grad)
+
+            self.assertIs(comfy_kitchen.apply_rope_split_half, original_public)
+            self.assertIs(predict2.apply_rope_split_half, original_direct_bound)
 
 
 if __name__ == "__main__":
