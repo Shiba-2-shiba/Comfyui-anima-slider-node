@@ -617,8 +617,66 @@ def branch_loss_for_teacher(
         raw_loss = F.mse_loss(model_pred.float(), teacher.float())
         loss = raw_loss * loss_weight.to(device=raw_loss.device)
     if train:
-        ensure_trainable_loss(loss, patcher.model)
+        ensure_trainable_loss(loss, patcher.model, raw_loss=raw_loss, model_pred=model_pred)
     return loss, raw_loss, model_pred
+
+
+def tensor_autograd_debug(tensor: torch.Tensor) -> dict[str, object]:
+    grad_fn = type(tensor.grad_fn).__name__ if tensor.grad_fn is not None else None
+    return {
+        "shape": list(tensor.shape),
+        "device": str(tensor.device),
+        "dtype": str(tensor.dtype),
+        "requires_grad": bool(tensor.requires_grad),
+        "is_leaf": bool(tensor.is_leaf),
+        "is_inference": bool(tensor.is_inference()),
+        "grad_fn": grad_fn,
+    }
+
+
+def lora_grad_path_summary(model: torch.nn.Module, include_samples: bool = True) -> dict[str, object]:
+    modules = []
+    module_count = 0
+    enabled_count = 0
+    trainable_parameter_count = 0
+    trainable_element_count = 0
+    devices = Counter()
+    dtypes = Counter()
+    for name, module in model.named_modules():
+        if not isinstance(module, lora_network.LoRALinear):
+            continue
+        module_count += 1
+        enabled_count += int(module.enabled)
+        params = list(module.lora_down.parameters()) + list(module.lora_up.parameters())
+        trainable_params = [parameter for parameter in params if parameter.requires_grad]
+        trainable_parameter_count += len(trainable_params)
+        trainable_element_count += sum(parameter.numel() for parameter in trainable_params)
+        for parameter in trainable_params:
+            devices[str(parameter.device)] += 1
+            dtypes[str(parameter.dtype).removeprefix("torch.")] += 1
+        if include_samples and len(modules) < 8:
+            modules.append(
+                {
+                    "name": name,
+                    "enabled": bool(module.enabled),
+                    "rank": int(module.rank),
+                    "down_device": str(module.lora_down.weight.device),
+                    "up_device": str(module.lora_up.weight.device),
+                    "down_dtype": str(module.lora_down.weight.dtype).removeprefix("torch."),
+                    "up_dtype": str(module.lora_up.weight.dtype).removeprefix("torch."),
+                    "down_requires_grad": bool(module.lora_down.weight.requires_grad),
+                    "up_requires_grad": bool(module.lora_up.weight.requires_grad),
+                }
+            )
+    return {
+        "module_count": module_count,
+        "enabled_count": enabled_count,
+        "trainable_parameter_count": trainable_parameter_count,
+        "trainable_element_count": trainable_element_count,
+        "trainable_devices": _compact_counter(devices),
+        "trainable_dtypes": _compact_counter(dtypes),
+        "sample_modules": modules,
+    }
 
 
 def lora_training_diagnostics(model: torch.nn.Module) -> dict[str, int]:
@@ -643,10 +701,38 @@ def lora_training_diagnostics(model: torch.nn.Module) -> dict[str, int]:
     }
 
 
-def ensure_trainable_loss(loss: torch.Tensor, model: torch.nn.Module) -> None:
+def ensure_lora_trainable(model: torch.nn.Module) -> dict[str, object]:
+    summary = lora_grad_path_summary(model)
+    if summary["module_count"] == 0:
+        raise RuntimeError("No LoRA modules were injected")
+    if summary["trainable_parameter_count"] == 0:
+        LOGGER.error("No trainable Anima LoRA parameters remain after setup: %s", summary)
+        raise RuntimeError(
+            "No trainable LoRA parameters remain after model setup. "
+            "Load/materialize the ComfyUI model before injecting LoRA modules. "
+            f"Diagnostics: {summary}"
+        )
+    return summary
+
+
+def ensure_trainable_loss(
+    loss: torch.Tensor,
+    model: torch.nn.Module,
+    raw_loss: torch.Tensor | None = None,
+    model_pred: torch.Tensor | None = None,
+) -> None:
     if loss.requires_grad:
         return
-    diagnostics = lora_training_diagnostics(model)
+    diagnostics: dict[str, object] = {
+        "grad_enabled": torch.is_grad_enabled(),
+        "inference_mode": torch.is_inference_mode_enabled(),
+        "loss": tensor_autograd_debug(loss),
+        "lora": lora_grad_path_summary(model),
+    }
+    if raw_loss is not None:
+        diagnostics["raw_loss"] = tensor_autograd_debug(raw_loss)
+    if model_pred is not None:
+        diagnostics["model_pred"] = tensor_autograd_debug(model_pred)
     raise RuntimeError(
         "Training loss is detached before backward; LoRA parameters are not connected to this forward pass. "
         f"Diagnostics: {diagnostics}. "
@@ -716,13 +802,18 @@ def flow_loss_for_record(
     teacher_parts = compute_flow_teacher_parts(patcher, latent, sigma, record)
     timings["teacher_parts"] = time.perf_counter() - started_at
     loss_weight = compute_loss_weight_for_sigma(sigma, loss_weighting_scheme).mean().to(device)
+    prompt_guidance_scale = float(getattr(record, "guidance_scale", 1.0))
+    if prompt_guidance_scale < 0:
+        raise ValueError("prompt guidance_scale must be non-negative")
+    combined_guidance_scale = teacher_guidance_scale * prompt_guidance_scale
+    effective_eta = eta * combined_guidance_scale
 
     if direction_loss == "enhance_only":
         teacher = teacher_from_parts(
             teacher_parts,
             eta=eta,
             action=record.action,
-            guidance_scale=teacher_guidance_scale,
+            guidance_scale=combined_guidance_scale,
             norm_reference=teacher_norm_reference,
         ).detach()
         started_at = time.perf_counter()
@@ -731,7 +822,9 @@ def flow_loss_for_record(
         )
         timings["lora_forward_loss"] = time.perf_counter() - started_at
         info = build_flow_loss_info(step_index, sigmas, loss_weight, raw_loss, model_pred, teacher_parts, teacher)
+        info["prompt_guidance_scale"] = prompt_guidance_scale
         info["teacher_guidance_scale"] = teacher_guidance_scale
+        info["effective_eta"] = effective_eta
         info["teacher_norm_reference"] = teacher_norm_reference
         timings["total_forward"] = time.perf_counter() - total_started_at
         info["phase_timings"] = {key: round(value, 3) for key, value in timings.items()}
@@ -742,14 +835,14 @@ def flow_loss_for_record(
             teacher_parts,
             eta=eta,
             action="enhance",
-            guidance_scale=teacher_guidance_scale,
+            guidance_scale=combined_guidance_scale,
             norm_reference=teacher_norm_reference,
         ).detach()
         erase_teacher = teacher_from_parts(
             teacher_parts,
             eta=eta,
             action="erase",
-            guidance_scale=teacher_guidance_scale,
+            guidance_scale=combined_guidance_scale,
             norm_reference=teacher_norm_reference,
         ).detach()
         started_at = time.perf_counter()
@@ -766,7 +859,9 @@ def flow_loss_for_record(
         info.update(
             {
                 "direction_loss": direction_loss,
+                "prompt_guidance_scale": prompt_guidance_scale,
                 "teacher_guidance_scale": teacher_guidance_scale,
+                "effective_eta": effective_eta,
                 "teacher_norm_reference": teacher_norm_reference,
                 "enhance_raw_loss": float(enhance_raw_loss.detach().cpu().item()),
                 "erase_raw_loss": float(erase_raw_loss.detach().cpu().item()),
@@ -837,6 +932,16 @@ def train_lora_from_records(model, records: list[AnimaPromptConds], request: Tra
     restore = []
     lora_sd: dict[str, torch.Tensor] = {}
     try:
+        device = mp.load_device
+        image_seq_len = (request.height // 16) * (request.width // 16)
+
+        import comfy.model_management  # type: ignore
+
+        setup_started_at = time.perf_counter()
+        comfy.model_management.load_models_gpu([mp], force_full_load=True)
+        materialization_summary = materialize_inference_tensors_for_training(mp.model)
+        LOGGER.info("Anima slider training tensor materialization: %s", materialization_summary)
+
         freeze_parameters(mp.model)
         injected, restore = lora_network.inject_lora_linear_modules(
             mp.model,
@@ -850,23 +955,17 @@ def train_lora_from_records(model, records: list[AnimaPromptConds], request: Tra
         if not injected:
             raise RuntimeError("No LoRA targets matched the configured include/exclude patterns")
 
-        device = mp.load_device
-        image_seq_len = (request.height // 16) * (request.width // 16)
-
-        import comfy.model_management  # type: ignore
-
-        setup_started_at = time.perf_counter()
-        comfy.model_management.load_models_gpu([mp], force_full_load=True)
-        materialization_summary = materialize_inference_tensors_for_training(mp.model)
-        LOGGER.info("Anima slider training tensor materialization: %s", materialization_summary)
         lora_dtype_summary = lora_network.cast_lora_weight_dtype(mp.model, request.lora_weight_dtype)
         LOGGER.info("Anima slider LoRA weight dtype: %s", lora_dtype_summary)
         lora_trainable_summary = set_lora_parameters_trainable(mp.model, True)
         LOGGER.info("Anima slider LoRA trainable parameters restored: %s", lora_trainable_summary)
+        lora_grad_summary = ensure_lora_trainable(mp.model)
+        LOGGER.info("Anima slider LoRA grad path after injection: %s", lora_grad_summary)
         residency_summary = promote_model_residency(mp.model, device, request.model_residency)
         if residency_summary.get("promoted"):
             lora_dtype_summary = lora_network.cast_lora_weight_dtype(mp.model, request.lora_weight_dtype)
             lora_trainable_summary = set_lora_parameters_trainable(mp.model, True)
+            lora_grad_summary = ensure_lora_trainable(mp.model)
         LOGGER.info("Anima slider model residency attempt: %s", residency_summary)
         model_placement_summary = parameter_placement_diagnostics(mp.model)
         lora_placement_summary = lora_parameter_placement_diagnostics(mp.model)
@@ -1081,6 +1180,7 @@ def train_lora_from_records(model, records: list[AnimaPromptConds], request: Tra
             "optimizer_param_groups": optimizer_group_summary,
             "comfyui_training_tensor_materialization": materialization_summary,
             "lora_trainable_parameters": lora_trainable_summary,
+            "lora_grad_path": lora_grad_summary,
             "model_residency": residency_summary,
             "lora_weight_dtype": lora_dtype_summary,
             "model_placement_after_setup": model_placement_summary,
@@ -1106,6 +1206,10 @@ def train_lora_from_records(model, records: list[AnimaPromptConds], request: Tra
             "max_step_index": max_step_index,
             "eval_step_indices": eval_step_indices,
             "eta": request.eta,
+            "prompt_guidance_scales": {
+                str(record.prompt_index): record.guidance_scale
+                for record in records
+            },
             "sigmas": [float(value) for value in sigmas.detach().cpu().tolist()],
             "losses": losses,
             "step_records": step_records,

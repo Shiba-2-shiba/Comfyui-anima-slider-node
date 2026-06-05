@@ -3,6 +3,8 @@ from __future__ import annotations
 import sys
 import unittest
 from pathlib import Path
+from types import ModuleType, SimpleNamespace
+from unittest import mock
 
 import torch
 
@@ -152,6 +154,58 @@ class TrainingUtilTests(unittest.TestCase):
 
         with self.assertRaisesRegex(ValueError, "Unsupported teacher_norm_reference"):
             training.teacher_from_parts(parts, eta=1.0, action="enhance", norm_reference="unknown")
+
+    def test_flow_loss_combines_prompt_guidance_with_node_multiplier(self):
+        parts = {
+            "target_base": torch.tensor([[1.0, 0.0]]),
+            "positive_base": torch.tensor([[3.0, 0.0]]),
+            "unconditional_base": torch.tensor([[2.0, 0.0]]),
+            "neutral_base": torch.tensor([[1.0, 0.0]]),
+        }
+        captured = {}
+
+        def fake_branch_loss(_patcher, _latent, _sigma, _cond, teacher, loss_weight, train, lora_multiplier):
+            captured["teacher"] = teacher
+            return torch.tensor(0.0, requires_grad=True), torch.tensor(0.0), torch.zeros_like(teacher)
+
+        record = SimpleNamespace(
+            batch_size=1,
+            guidance_scale=2.0,
+            action="enhance",
+            conds={"target": object()},
+        )
+
+        patcher = SimpleNamespace(
+            load_device="cpu",
+            model=SimpleNamespace(get_dtype_inference=lambda: torch.float32),
+        )
+
+        with (
+            mock.patch.object(training.anima_forward, "make_random_latent", return_value=torch.zeros(1, 2)),
+            mock.patch.object(training, "target_trajectory_latent", return_value=torch.zeros(1, 2)),
+            mock.patch.object(training, "compute_flow_teacher_parts", return_value=parts),
+            mock.patch.object(training, "branch_loss_for_teacher", side_effect=fake_branch_loss),
+        ):
+            _loss, info = training.flow_loss_for_record(
+                patcher,
+                record,
+                width=16,
+                height=16,
+                seed=1,
+                sigmas=torch.tensor([1.0, 0.5, 0.0]),
+                step_index=1,
+                eta=1.5,
+                loss_weighting_scheme="none",
+                train=True,
+                direction_loss="enhance_only",
+                teacher_guidance_scale=0.5,
+                teacher_norm_reference="none",
+            )
+
+        self.assertEqual(info["prompt_guidance_scale"], 2.0)
+        self.assertEqual(info["teacher_guidance_scale"], 0.5)
+        self.assertEqual(info["effective_eta"], 1.5)
+        torch.testing.assert_close(captured["teacher"], torch.tensor([[2.5, 0.0]]))
 
     def test_inject_lora_can_restore_original_modules(self):
         model = FakeDiffusion()
@@ -363,6 +417,78 @@ class TrainingUtilTests(unittest.TestCase):
         diagnostics = training.lora_training_diagnostics(model)
         self.assertEqual(diagnostics["trainable_lora_parameters"], 2)
         self.assertFalse(model.diffusion_model.blocks[0].self_attn.q_proj.base.weight.requires_grad)
+
+    def test_train_lora_setup_loads_and_materializes_before_lora_injection(self):
+        calls = []
+
+        class StopSetup(Exception):
+            pass
+
+        class SourceModel:
+            def clone(self):
+                return SimpleNamespace(model=torch.nn.Linear(3, 4), load_device="cpu")
+
+        fake_management = ModuleType("comfy.model_management")
+
+        def fake_load_models_gpu(_models, force_full_load=False):
+            calls.append("load_models_gpu")
+
+        def fake_materialize(_model):
+            calls.append("materialize")
+            return {}
+
+        def fake_freeze(_model):
+            calls.append("freeze")
+
+        def fake_inject(*_args, **_kwargs):
+            calls.append("inject")
+            raise StopSetup()
+
+        fake_management.load_models_gpu = fake_load_models_gpu
+        fake_comfy = ModuleType("comfy")
+        fake_comfy.model_management = fake_management
+        request = training.TrainRequest(
+            prompt_indices=[0],
+            eval_prompt_indices=[0],
+            steps=1,
+            lr=0.0001,
+            rank=2,
+            alpha=2.0,
+            width=16,
+            height=16,
+            num_inference_steps=3,
+            scheduler_name="simple",
+            timestep_sampling="mid",
+            sigmoid_scale=1.0,
+            discrete_flow_shift=1.0,
+            loss_weighting_scheme="none",
+            direction_loss="enhance_only",
+            teacher_guidance_scale=1.0,
+            teacher_norm_reference="positive",
+            min_step_index=None,
+            max_step_index=None,
+            eval_step_indices=None,
+            eta=1.0,
+            seed=1,
+            eval_seed=1,
+            vary_seed=False,
+            include_patterns=["*"],
+            exclude_patterns=[],
+            reg_dims={},
+            reg_lrs={},
+            model_residency="dynamic",
+        )
+
+        with (
+            mock.patch.dict(sys.modules, {"comfy": fake_comfy, "comfy.model_management": fake_management}),
+            mock.patch.object(training, "materialize_inference_tensors_for_training", side_effect=fake_materialize),
+            mock.patch.object(training, "freeze_parameters", side_effect=fake_freeze),
+            mock.patch.object(lora_network, "inject_lora_linear_modules", side_effect=fake_inject),
+        ):
+            with self.assertRaises(StopSetup):
+                training.train_lora_from_records(SourceModel(), [SimpleNamespace()], request)
+
+        self.assertEqual(calls, ["load_models_gpu", "materialize", "freeze", "inject"])
 
     def test_ensure_trainable_loss_rejects_detached_loss_with_diagnostics(self):
         model = FakeDiffusion()

@@ -1,6 +1,6 @@
 - target: anime illustration, adult woman, solo, fully clothed, nonsexual, portrait, front view, black hair, medium hair, wearing a blouse, simple studio background, clean lineart, balanced lighting
-  positive: anime illustration, adult woman, solo, fully clothed, nonsexual, portrait, front view, black hair, medium hair, wearing a blouse, simple studio background, clean lineart, balanced lighting, pastel colors, soft color palette, light gentle tones, pastel shading
-  unconditional: anime illustration, adult woman, solo, fully clothed, nonsexual, portrait, front view, black hair, medium hair, wearing a blouse, simple studio background, clean lineart, balanced lighting, rich colors, bold color palette, saturated tones, deeper color accents
+  positive: anime illustration, adult woman, solo, fully clothed, nonsexual, portrait, front view, black hair, medium hair, wearing a blouse, simple studio background, clean lineart, balanced lighting, pale pastel colors, low saturation palette, soft powdery tones, milky light shading, gentle washed color accents
+  unconditional: anime illustration, adult woman, solo, fully clothed, nonsexual, portrait, front view, black hair, medium hair, wearing a blouse, simple studio background, clean lineart, balanced lighting, vivid saturated colors, high saturation palette, deep bold tones, strong contrast shading, intense color accents
   neutral: anime illustration, adult woman, solo, fully clothed, nonsexual, portrait, front view, black hair, medium hair, wearing a blouse, simple studio background, clean lineart, balanced lighting
   guidance_scale: 2.0
   action: enhance
@@ -8,8 +8,8 @@
   height: 1152
   batch_size: 1
 - target: anime illustration, adult woman, solo, fully clothed, nonsexual, upper body, three-quarter view, brown hair, long hair, wearing a cardigan, simple indoor background, clean lineart, balanced lighting
-  positive: anime illustration, adult woman, solo, fully clothed, nonsexual, upper body, three-quarter view, brown hair, long hair, wearing a cardigan, simple indoor background, clean lineart, balanced lighting, pastel colors, soft color palette, light gentle tones, pastel shading
-  unconditional: anime illustration, adult woman, solo, fully clothed, nonsexual, upper body, three-quarter view, brown hair, long hair, wearing a cardigan, simple indoor background, clean lineart, balanced lighting, rich colors, bold color palette, saturated tones, deeper color accents
+  positive: anime illustration, adult woman, solo, fully clothed, nonsexual, upper body, three-quarter view, brown hair, long hair, wearing a cardigan, simple indoor background, clean lineart, balanced lighting, pale pastel colors, low saturation palette, soft powdery tones, milky light shading, gentle washed color accents
+  unconditional: anime illustration, adult woman, solo, fully clothed, nonsexual, upper body, three-quarter view, brown hair, long hair, wearing a cardigan, simple indoor background, clean lineart, balanced lighting, vivid saturated colors, high saturation palette, deep bold tones, strong contrast shading, intense color accents
   neutral: anime illustration, adult woman, solo, fully clothed, nonsexual, upper body, three-quarter view, brown hair, long hair, wearing a cardigan, simple indoor background, clean lineart, balanced lighting
   guidance_scale: 2.0
   action: enhance
@@ -17,8 +17,8 @@
   height: 1152
   batch_size: 1
 - target: anime illustration, adult woman, solo, fully clothed, nonsexual, close-up, front view, blonde hair, short hair, wearing a jacket, plain background, clean lineart, balanced lighting
-  positive: anime illustration, adult woman, solo, fully clothed, nonsexual, close-up, front view, blonde hair, short hair, wearing a jacket, plain background, clean lineart, balanced lighting, pastel colors, soft color palette, light gentle tones, pastel shading
-  unconditional: anime illustration, adult woman, solo, fully clothed, nonsexual, close-up, front view, blonde hair, short hair, wearing a jacket, plain background, clean lineart, balanced lighting, rich colors, bold color palette, saturated tones, deeper color accents
+  positive: anime illustration, adult woman, solo, fully clothed, nonsexual, close-up, front view, blonde hair, short hair, wearing a jacket, plain background, clean lineart, balanced lighting, pale pastel colors, low saturation palette, soft powdery tones, milky light shading, gentle washed color accents
+  unconditional: anime illustration, adult woman, solo, fully clothed, nonsexual, close-up, front view, blonde hair, short hair, wearing a jacket, plain background, clean lineart, balanced lighting, vivid saturated colors, high saturation palette, deep bold tones, strong contrast shading, intense color accents
   neutral: anime illustration, adult woman, solo, fully clothed, nonsexual, close-up, front view, blonde hair, short hair, wearing a jacket, plain background, clean lineart, balanced lighting
   guidance_scale: 2.0
   action: enhance
@@ -26,8 +26,8 @@
   height: 1152
   batch_size: 1
 - target: anime illustration, adult woman, solo, fully clothed, nonsexual, waist up, three-quarter view, silver hair, medium hair, wearing a sweater, simple studio background, clean lineart, balanced lighting
-  positive: anime illustration, adult woman, solo, fully clothed, nonsexual, waist up, three-quarter view, silver hair, medium hair, wearing a sweater, simple studio background, clean lineart, balanced lighting, pastel colors, soft color palette, light gentle tones, pastel shading
-  unconditional: anime illustration, adult woman, solo, fully clothed, nonsexual, waist up, three-quarter view, silver hair, medium hair, wearing a sweater, simple studio background, clean lineart, balanced lighting, rich colors, bold color palette, saturated tones, deeper color accents
+  positive: anime illustration, adult woman, solo, fully clothed, nonsexual, waist up, three-quarter view, silver hair, medium hair, wearing a sweater, simple studio background, clean lineart, balanced lighting, pale pastel colors, low saturation palette, soft powdery tones, milky light shading, gentle washed color accents
+  unconditional: anime illustration, adult woman, solo, fully clothed, nonsexual, waist up, three-quarter view, silver hair, medium hair, wearing a sweater, simple studio background, clean lineart, balanced lighting, vivid saturated colors, high saturation palette, deep bold tones, strong contrast shading, intense color accents
   neutral: anime illustration, adult woman, solo, fully clothed, nonsexual, waist up, three-quarter view, silver hair, medium hair, wearing a sweater, simple studio background, clean lineart, balanced lighting
   guidance_scale: 2.0
   action: enhance
@@ -35,8 +35,8 @@
   height: 1152
   batch_size: 1
 - target: anime illustration, adult woman, solo, fully clothed, nonsexual, upper body, front view, pink hair, long hair, wearing a dress, plain room background, clean lineart, balanced lighting
-  positive: anime illustration, adult woman, solo, fully clothed, nonsexual, upper body, front view, pink hair, long hair, wearing a dress, plain room background, clean lineart, balanced lighting, pastel colors, soft color palette, light gentle tones, pastel shading
-  unconditional: anime illustration, adult woman, solo, fully clothed, nonsexual, upper body, front view, pink hair, long hair, wearing a dress, plain room background, clean lineart, balanced lighting, rich colors, bold color palette, saturated tones, deeper color accents
+  positive: anime illustration, adult woman, solo, fully clothed, nonsexual, upper body, front view, pink hair, long hair, wearing a dress, plain room background, clean lineart, balanced lighting, pale pastel colors, low saturation palette, soft powdery tones, milky light shading, gentle washed color accents
+  unconditional: anime illustration, adult woman, solo, fully clothed, nonsexual, upper body, front view, pink hair, long hair, wearing a dress, plain room background, clean lineart, balanced lighting, vivid saturated colors, high saturation palette, deep bold tones, strong contrast shading, intense color accents
   neutral: anime illustration, adult woman, solo, fully clothed, nonsexual, upper body, front view, pink hair, long hair, wearing a dress, plain room background, clean lineart, balanced lighting
   guidance_scale: 2.0
   action: enhance
@@ -44,8 +44,8 @@
   height: 1152
   batch_size: 1
 - target: anime illustration, adult woman, solo, fully clothed, nonsexual, upper body, three-quarter view, red hair, short hair, wearing a casual top, plain background, clean lineart, balanced lighting
-  positive: anime illustration, adult woman, solo, fully clothed, nonsexual, upper body, three-quarter view, red hair, short hair, wearing a casual top, plain background, clean lineart, balanced lighting, pastel colors, soft color palette, light gentle tones, pastel shading
-  unconditional: anime illustration, adult woman, solo, fully clothed, nonsexual, upper body, three-quarter view, red hair, short hair, wearing a casual top, plain background, clean lineart, balanced lighting, rich colors, bold color palette, saturated tones, deeper color accents
+  positive: anime illustration, adult woman, solo, fully clothed, nonsexual, upper body, three-quarter view, red hair, short hair, wearing a casual top, plain background, clean lineart, balanced lighting, pale pastel colors, low saturation palette, soft powdery tones, milky light shading, gentle washed color accents
+  unconditional: anime illustration, adult woman, solo, fully clothed, nonsexual, upper body, three-quarter view, red hair, short hair, wearing a casual top, plain background, clean lineart, balanced lighting, vivid saturated colors, high saturation palette, deep bold tones, strong contrast shading, intense color accents
   neutral: anime illustration, adult woman, solo, fully clothed, nonsexual, upper body, three-quarter view, red hair, short hair, wearing a casual top, plain background, clean lineart, balanced lighting
   guidance_scale: 2.0
   action: enhance
@@ -53,8 +53,8 @@
   height: 1152
   batch_size: 1
 - target: anime illustration, adult woman, solo, fully clothed, nonsexual, bust shot, front view, black hair with blue streaks, long hair, wearing a coat, simple studio background, clean lineart, balanced lighting
-  positive: anime illustration, adult woman, solo, fully clothed, nonsexual, bust shot, front view, black hair with blue streaks, long hair, wearing a coat, simple studio background, clean lineart, balanced lighting, pastel colors, soft color palette, light gentle tones, pastel shading
-  unconditional: anime illustration, adult woman, solo, fully clothed, nonsexual, bust shot, front view, black hair with blue streaks, long hair, wearing a coat, simple studio background, clean lineart, balanced lighting, rich colors, bold color palette, saturated tones, deeper color accents
+  positive: anime illustration, adult woman, solo, fully clothed, nonsexual, bust shot, front view, black hair with blue streaks, long hair, wearing a coat, simple studio background, clean lineart, balanced lighting, pale pastel colors, low saturation palette, soft powdery tones, milky light shading, gentle washed color accents
+  unconditional: anime illustration, adult woman, solo, fully clothed, nonsexual, bust shot, front view, black hair with blue streaks, long hair, wearing a coat, simple studio background, clean lineart, balanced lighting, vivid saturated colors, high saturation palette, deep bold tones, strong contrast shading, intense color accents
   neutral: anime illustration, adult woman, solo, fully clothed, nonsexual, bust shot, front view, black hair with blue streaks, long hair, wearing a coat, simple studio background, clean lineart, balanced lighting
   guidance_scale: 2.0
   action: enhance
@@ -62,8 +62,8 @@
   height: 1152
   batch_size: 1
 - target: anime illustration, adult woman, solo, fully clothed, nonsexual, portrait, three-quarter view, brown hair, medium hair, wearing a vest over a shirt, plain studio background, clean lineart, balanced lighting
-  positive: anime illustration, adult woman, solo, fully clothed, nonsexual, portrait, three-quarter view, brown hair, medium hair, wearing a vest over a shirt, plain studio background, clean lineart, balanced lighting, pastel colors, soft color palette, light gentle tones, pastel shading
-  unconditional: anime illustration, adult woman, solo, fully clothed, nonsexual, portrait, three-quarter view, brown hair, medium hair, wearing a vest over a shirt, plain studio background, clean lineart, balanced lighting, rich colors, bold color palette, saturated tones, deeper color accents
+  positive: anime illustration, adult woman, solo, fully clothed, nonsexual, portrait, three-quarter view, brown hair, medium hair, wearing a vest over a shirt, plain studio background, clean lineart, balanced lighting, pale pastel colors, low saturation palette, soft powdery tones, milky light shading, gentle washed color accents
+  unconditional: anime illustration, adult woman, solo, fully clothed, nonsexual, portrait, three-quarter view, brown hair, medium hair, wearing a vest over a shirt, plain studio background, clean lineart, balanced lighting, vivid saturated colors, high saturation palette, deep bold tones, strong contrast shading, intense color accents
   neutral: anime illustration, adult woman, solo, fully clothed, nonsexual, portrait, three-quarter view, brown hair, medium hair, wearing a vest over a shirt, plain studio background, clean lineart, balanced lighting
   guidance_scale: 2.0
   action: enhance

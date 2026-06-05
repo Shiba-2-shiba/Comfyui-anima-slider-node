@@ -69,13 +69,20 @@ class LoRALinear(torch.nn.Module):
         torch.nn.init.normal_(self.lora_down.weight, std=1 / rank)
         torch.nn.init.zeros_(self.lora_up.weight)
 
+    def _align_lora_device(self, device: torch.device) -> None:
+        if self.lora_down.weight.device == device and self.lora_up.weight.device == device:
+            return
+        self.lora_down.to(device=device)
+        self.lora_up.to(device=device)
+
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         base_out = self.base(x)
         if not self.enabled:
             return base_out
-        lora_input = x if x.dtype == self.lora_down.weight.dtype else x.to(dtype=self.lora_down.weight.dtype)
+        self._align_lora_device(x.device)
+        lora_input = x.to(device=self.lora_down.weight.device, dtype=self.lora_down.weight.dtype)
         lora_out = self.lora_up(self.lora_down(lora_input)) * self.scale * self.multiplier
-        return base_out + lora_out.to(dtype=base_out.dtype)
+        return base_out + lora_out.to(device=base_out.device, dtype=base_out.dtype)
 
     def cast_lora_weights(self, weight_dtype: str) -> torch.dtype:
         lora_dtype = resolve_lora_weight_dtype(self.base.weight, weight_dtype)
