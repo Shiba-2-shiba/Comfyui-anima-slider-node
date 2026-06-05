@@ -1,0 +1,72 @@
+- target: anime illustration, adult blacksmith, solo, fully clothed, nonsexual, full scene view, front view, standing beside a stone forge, workshop background, clear air
+  positive: anime illustration, adult blacksmith, solo, fully clothed, nonsexual, full scene view, front view, standing beside a stone forge, workshop background, clear air, huge roaring flames, towering fire plume, blazing inferno, intense orange firelight, large bright flame mass
+  unconditional: anime illustration, adult blacksmith, solo, fully clothed, nonsexual, full scene view, front view, standing beside a stone forge, workshop background, clear air, tiny weak flame, nearly extinguished fire, low small flicker, dim firelight, minimal flame mass
+  neutral: anime illustration, adult blacksmith, solo, fully clothed, nonsexual, full scene view, front view, standing beside a stone forge, workshop background, clear air
+  guidance_scale: 2.0
+  action: enhance
+  width: 1152
+  height: 896
+  batch_size: 1
+- target: anime illustration, adult traveler, solo, fully clothed, nonsexual, full scene view, three-quarter view, standing near a campsite, forest clearing background, calm evening
+  positive: anime illustration, adult traveler, solo, fully clothed, nonsexual, full scene view, three-quarter view, standing near a campsite, forest clearing background, calm evening, huge roaring flames, towering fire plume, blazing inferno, intense orange firelight, large bright flame mass
+  unconditional: anime illustration, adult traveler, solo, fully clothed, nonsexual, full scene view, three-quarter view, standing near a campsite, forest clearing background, calm evening, tiny weak flame, nearly extinguished fire, low small flicker, dim firelight, minimal flame mass
+  neutral: anime illustration, adult traveler, solo, fully clothed, nonsexual, full scene view, three-quarter view, standing near a campsite, forest clearing background, calm evening
+  guidance_scale: 2.0
+  action: enhance
+  width: 1152
+  height: 896
+  batch_size: 1
+- target: anime illustration, adult adventurer, solo, fully clothed, nonsexual, full body, front view, standing near a ceremonial brazier, stone courtyard background, clear air
+  positive: anime illustration, adult adventurer, solo, fully clothed, nonsexual, full body, front view, standing near a ceremonial brazier, stone courtyard background, clear air, huge roaring flames, towering fire plume, blazing inferno, intense orange firelight, large bright flame mass
+  unconditional: anime illustration, adult adventurer, solo, fully clothed, nonsexual, full body, front view, standing near a ceremonial brazier, stone courtyard background, clear air, tiny weak flame, nearly extinguished fire, low small flicker, dim firelight, minimal flame mass
+  neutral: anime illustration, adult adventurer, solo, fully clothed, nonsexual, full body, front view, standing near a ceremonial brazier, stone courtyard background, clear air
+  guidance_scale: 2.0
+  action: enhance
+  width: 1152
+  height: 896
+  batch_size: 1
+- target: anime illustration, adult mage, solo, fully clothed, nonsexual, full scene view, three-quarter view, standing in a training arena, fantasy background, clear air
+  positive: anime illustration, adult mage, solo, fully clothed, nonsexual, full scene view, three-quarter view, standing in a training arena, fantasy background, clear air, huge roaring flames, towering fire plume, blazing inferno, intense orange firelight, large bright flame mass
+  unconditional: anime illustration, adult mage, solo, fully clothed, nonsexual, full scene view, three-quarter view, standing in a training arena, fantasy background, clear air, tiny weak flame, nearly extinguished fire, low small flicker, dim firelight, minimal flame mass
+  neutral: anime illustration, adult mage, solo, fully clothed, nonsexual, full scene view, three-quarter view, standing in a training arena, fantasy background, clear air
+  guidance_scale: 2.0
+  action: enhance
+  width: 1152
+  height: 896
+  batch_size: 1
+- target: anime illustration, adult engineer, solo, fully clothed, nonsexual, full body, front view, standing in an industrial workshop, metal wall background, clear air
+  positive: anime illustration, adult engineer, solo, fully clothed, nonsexual, full body, front view, standing in an industrial workshop, metal wall background, clear air, huge roaring flames, towering fire plume, blazing inferno, intense orange firelight, large bright flame mass
+  unconditional: anime illustration, adult engineer, solo, fully clothed, nonsexual, full body, front view, standing in an industrial workshop, metal wall background, clear air, tiny weak flame, nearly extinguished fire, low small flicker, dim firelight, minimal flame mass
+  neutral: anime illustration, adult engineer, solo, fully clothed, nonsexual, full body, front view, standing in an industrial workshop, metal wall background, clear air
+  guidance_scale: 2.0
+  action: enhance
+  width: 1152
+  height: 896
+  batch_size: 1
+- target: anime illustration, adult knight, solo, fully clothed, nonsexual, full scene view, three-quarter view, standing beside a signal beacon, mountain path background, clear twilight
+  positive: anime illustration, adult knight, solo, fully clothed, nonsexual, full scene view, three-quarter view, standing beside a signal beacon, mountain path background, clear twilight, huge roaring flames, towering fire plume, blazing inferno, intense orange firelight, large bright flame mass
+  unconditional: anime illustration, adult knight, solo, fully clothed, nonsexual, full scene view, three-quarter view, standing beside a signal beacon, mountain path background, clear twilight, tiny weak flame, nearly extinguished fire, low small flicker, dim firelight, minimal flame mass
+  neutral: anime illustration, adult knight, solo, fully clothed, nonsexual, full scene view, three-quarter view, standing beside a signal beacon, mountain path background, clear twilight
+  guidance_scale: 2.0
+  action: enhance
+  width: 1152
+  height: 896
+  batch_size: 1
+- target: anime illustration, adult adventurer, solo, fully clothed, nonsexual, full body, front view, standing near a ritual altar, ancient ruins background, clear air
+  positive: anime illustration, adult adventurer, solo, fully clothed, nonsexual, full body, front view, standing near a ritual altar, ancient ruins background, clear air, huge roaring flames, towering fire plume, blazing inferno, intense orange firelight, large bright flame mass
+  unconditional: anime illustration, adult adventurer, solo, fully clothed, nonsexual, full body, front view, standing near a ritual altar, ancient ruins background, clear air, tiny weak flame, nearly extinguished fire, low small flicker, dim firelight, minimal flame mass
+  neutral: anime illustration, adult adventurer, solo, fully clothed, nonsexual, full body, front view, standing near a ritual altar, ancient ruins background, clear air
+  guidance_scale: 2.0
+  action: enhance
+  width: 1152
+  height: 896
+  batch_size: 1
+- target: anime illustration, adult ranger, solo, fully clothed, nonsexual, full scene view, three-quarter view, standing near a safe camp pit, open field background, calm night
+  positive: anime illustration, adult ranger, solo, fully clothed, nonsexual, full scene view, three-quarter view, standing near a safe camp pit, open field background, calm night, huge roaring flames, towering fire plume, blazing inferno, intense orange firelight, large bright flame mass
+  unconditional: anime illustration, adult ranger, solo, fully clothed, nonsexual, full scene view, three-quarter view, standing near a safe camp pit, open field background, calm night, tiny weak flame, nearly extinguished fire, low small flicker, dim firelight, minimal flame mass
+  neutral: anime illustration, adult ranger, solo, fully clothed, nonsexual, full scene view, three-quarter view, standing near a safe camp pit, open field background, calm night
+  guidance_scale: 2.0
+  action: enhance
+  width: 1152
+  height: 896
+  batch_size: 1

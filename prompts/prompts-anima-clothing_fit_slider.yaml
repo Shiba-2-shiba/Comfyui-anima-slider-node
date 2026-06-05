@@ -1,0 +1,72 @@
+- target: anime illustration, adult woman, solo, fully clothed, nonsexual, upper body, front view, black hair, medium hair, wearing a blouse, plain studio background
+  positive: anime illustration, adult woman, solo, fully clothed, nonsexual, upper body, front view, black hair, medium hair, wearing a blouse, plain studio background, closely fitted blouse, body-hugging fit, taut fabric contours, sharp tailored silhouette
+  unconditional: anime illustration, adult woman, solo, fully clothed, nonsexual, upper body, front view, black hair, medium hair, wearing a blouse, plain studio background, oversized loose blouse, baggy fit, excess fabric folds, boxy loose silhouette
+  neutral: anime illustration, adult woman, solo, fully clothed, nonsexual, upper body, front view, black hair, medium hair, wearing a blouse, plain studio background
+  guidance_scale: 2.0
+  action: enhance
+  width: 896
+  height: 1152
+  batch_size: 1
+- target: anime illustration, adult woman, solo, fully clothed, nonsexual, waist up, three-quarter view, brown hair, long hair, wearing a cardigan over a top, simple indoor background
+  positive: anime illustration, adult woman, solo, fully clothed, nonsexual, waist up, three-quarter view, brown hair, long hair, wearing a cardigan over a top, simple indoor background, closely fitted cardigan, body-hugging layered fit, taut fabric contours, sharp tailored silhouette
+  unconditional: anime illustration, adult woman, solo, fully clothed, nonsexual, waist up, three-quarter view, brown hair, long hair, wearing a cardigan over a top, simple indoor background, oversized loose cardigan, baggy layered fit, excess fabric folds, boxy loose silhouette
+  neutral: anime illustration, adult woman, solo, fully clothed, nonsexual, waist up, three-quarter view, brown hair, long hair, wearing a cardigan over a top, simple indoor background
+  guidance_scale: 2.0
+  action: enhance
+  width: 896
+  height: 1152
+  batch_size: 1
+- target: anime illustration, adult woman, solo, fully clothed, nonsexual, thigh-up, front view, blonde hair, short hair, wearing a jacket and skirt, plain studio backdrop
+  positive: anime illustration, adult woman, solo, fully clothed, nonsexual, thigh-up, front view, blonde hair, short hair, wearing a jacket and skirt, plain studio backdrop, closely fitted jacket, body-hugging outfit fit, taut fabric contours, sharp tailored silhouette
+  unconditional: anime illustration, adult woman, solo, fully clothed, nonsexual, thigh-up, front view, blonde hair, short hair, wearing a jacket and skirt, plain studio backdrop, oversized loose jacket, baggy outfit fit, excess fabric folds, boxy loose silhouette
+  neutral: anime illustration, adult woman, solo, fully clothed, nonsexual, thigh-up, front view, blonde hair, short hair, wearing a jacket and skirt, plain studio backdrop
+  guidance_scale: 2.0
+  action: enhance
+  width: 896
+  height: 1152
+  batch_size: 1
+- target: anime illustration, adult woman, solo, fully clothed, nonsexual, upper body, three-quarter view, silver hair, medium hair, wearing a sweater, simple room background
+  positive: anime illustration, adult woman, solo, fully clothed, nonsexual, upper body, three-quarter view, silver hair, medium hair, wearing a sweater, simple room background, closely fitted sweater, body-hugging fit, taut knit fabric contours, sharp tailored silhouette
+  unconditional: anime illustration, adult woman, solo, fully clothed, nonsexual, upper body, three-quarter view, silver hair, medium hair, wearing a sweater, simple room background, oversized loose sweater, baggy fit, excess fabric folds, boxy loose silhouette
+  neutral: anime illustration, adult woman, solo, fully clothed, nonsexual, upper body, three-quarter view, silver hair, medium hair, wearing a sweater, simple room background
+  guidance_scale: 2.0
+  action: enhance
+  width: 896
+  height: 1152
+  batch_size: 1
+- target: anime illustration, adult woman, solo, fully clothed, nonsexual, waist up, front view, pink hair, long hair, wearing a long-sleeve top and skirt, plain background
+  positive: anime illustration, adult woman, solo, fully clothed, nonsexual, waist up, front view, pink hair, long hair, wearing a long-sleeve top and skirt, plain background, closely fitted long-sleeve top, body-hugging fit, taut fabric contours, sharp tailored silhouette
+  unconditional: anime illustration, adult woman, solo, fully clothed, nonsexual, waist up, front view, pink hair, long hair, wearing a long-sleeve top and skirt, plain background, oversized loose long-sleeve top, baggy fit, excess fabric folds, boxy loose silhouette
+  neutral: anime illustration, adult woman, solo, fully clothed, nonsexual, waist up, front view, pink hair, long hair, wearing a long-sleeve top and skirt, plain background
+  guidance_scale: 2.0
+  action: enhance
+  width: 896
+  height: 1152
+  batch_size: 1
+- target: anime illustration, adult woman, solo, fully clothed, nonsexual, thigh-up, three-quarter view, red hair, short hair, wearing a casual dress, simple studio background
+  positive: anime illustration, adult woman, solo, fully clothed, nonsexual, thigh-up, three-quarter view, red hair, short hair, wearing a casual dress, simple studio background, closely fitted dress, body-hugging fit, taut fabric contours, sharp tailored silhouette
+  unconditional: anime illustration, adult woman, solo, fully clothed, nonsexual, thigh-up, three-quarter view, red hair, short hair, wearing a casual dress, simple studio background, oversized loose dress, baggy fit, excess fabric folds, boxy loose silhouette
+  neutral: anime illustration, adult woman, solo, fully clothed, nonsexual, thigh-up, three-quarter view, red hair, short hair, wearing a casual dress, simple studio background
+  guidance_scale: 2.0
+  action: enhance
+  width: 896
+  height: 1152
+  batch_size: 1
+- target: anime illustration, adult woman, solo, fully clothed, nonsexual, full body, front view, black hair with blue streaks, long hair, wearing a coat over a dress, plain studio background
+  positive: anime illustration, adult woman, solo, fully clothed, nonsexual, full body, front view, black hair with blue streaks, long hair, wearing a coat over a dress, plain studio background, closely fitted coat, body-hugging outerwear fit, taut fabric contours, sharp tailored silhouette
+  unconditional: anime illustration, adult woman, solo, fully clothed, nonsexual, full body, front view, black hair with blue streaks, long hair, wearing a coat over a dress, plain studio background, oversized loose coat, baggy outerwear fit, excess fabric folds, boxy loose silhouette
+  neutral: anime illustration, adult woman, solo, fully clothed, nonsexual, full body, front view, black hair with blue streaks, long hair, wearing a coat over a dress, plain studio background
+  guidance_scale: 2.0
+  action: enhance
+  width: 896
+  height: 1152
+  batch_size: 1
+- target: anime illustration, adult woman, solo, fully clothed, nonsexual, waist up, three-quarter view, brown hair, medium hair, wearing a vest over a shirt, simple indoor background
+  positive: anime illustration, adult woman, solo, fully clothed, nonsexual, waist up, three-quarter view, brown hair, medium hair, wearing a vest over a shirt, simple indoor background, closely fitted vest and shirt, body-hugging layered fit, taut fabric contours, sharp tailored silhouette
+  unconditional: anime illustration, adult woman, solo, fully clothed, nonsexual, waist up, three-quarter view, brown hair, medium hair, wearing a vest over a shirt, simple indoor background, oversized loose vest and shirt, baggy layered fit, excess fabric folds, boxy loose silhouette
+  neutral: anime illustration, adult woman, solo, fully clothed, nonsexual, waist up, three-quarter view, brown hair, medium hair, wearing a vest over a shirt, simple indoor background
+  guidance_scale: 2.0
+  action: enhance
+  width: 896
+  height: 1152
+  batch_size: 1
