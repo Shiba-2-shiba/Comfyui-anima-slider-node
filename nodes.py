@@ -88,8 +88,8 @@ class AnimaSliderTrainLoraNode(io.ComfyNode):
                 io.Boolean.Input("gradient_checkpointing", default=True, tooltip="Checkpoint trainable diffusion blocks during LoRA training to reduce activation VRAM."),
                 io.Boolean.Input("skip_initial_eval", default=True, tooltip="Skip the pre-training eval pass for OOM isolation. Not a quality substitute."),
                 io.Boolean.Input("skip_final_eval", default=False, tooltip="Skip the post-training eval pass for OOM isolation. Not a quality substitute."),
-                io.Int.Input("width", default=512, min=16, max=4096, step=16, tooltip="Training latent width in pixels."),
-                io.Int.Input("height", default=512, min=16, max=4096, step=16, tooltip="Training latent height in pixels."),
+                io.Int.Input("width", default=0, min=0, max=4096, step=16, tooltip="Training latent width in pixels. 0 uses the selected prompt YAML resolution."),
+                io.Int.Input("height", default=0, min=0, max=4096, step=16, tooltip="Training latent height in pixels. 0 uses the selected prompt YAML resolution."),
                 io.Int.Input("num_inference_steps", default=20, min=3, max=200, tooltip="Number of simple scheduler sigmas."),
                 io.Combo.Input("timestep_sampling", options=["uniform", "mid", "early_late", "sigmoid", "shift", "flux_shift"], default="shift"),
                 io.Float.Input("sigmoid_scale", default=1.0, min=0.01, max=20.0, step=0.01),
@@ -170,6 +170,7 @@ class AnimaSliderTrainLoraNode(io.ComfyNode):
         train_indices = training.parse_indices(prompt_indices, 0)
         eval_indices = training.parse_indices(eval_prompt_indices, train_indices[0]) if eval_prompt_indices.strip() else train_indices
         parsed_eval_steps = training.parse_indices(eval_step_indices, 0) if eval_step_indices.strip() else None
+        resolved_width, resolved_height = prompt_util.resolve_training_resolution(prompts, train_indices + eval_indices, width, height)
         include_patterns, exclude_patterns = config.preset_patterns(network_preset)
         request = training.TrainRequest(
             prompt_indices=train_indices,
@@ -178,8 +179,8 @@ class AnimaSliderTrainLoraNode(io.ComfyNode):
             lr=lr,
             rank=rank,
             alpha=alpha,
-            width=width,
-            height=height,
+            width=resolved_width,
+            height=resolved_height,
             num_inference_steps=num_inference_steps,
             scheduler_name="simple",
             timestep_sampling=timestep_sampling,

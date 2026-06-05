@@ -54,6 +54,41 @@ def load_prompts_from_yaml(path: str | Path) -> list[PromptSettings]:
     return [_prompt_from_dict(prompt) for prompt in prompts]
 
 
+def resolve_training_resolution(
+    prompts: list[PromptSettings],
+    prompt_indices: list[int],
+    width: int,
+    height: int,
+) -> tuple[int, int]:
+    if width < 0 or height < 0:
+        raise ValueError("width/height must be non-negative")
+    if width > 0 and height > 0:
+        return width, height
+    if not prompt_indices:
+        raise ValueError("prompt_indices must not be empty")
+
+    selected = []
+    for index in prompt_indices:
+        if index < 0 or index >= len(prompts):
+            raise ValueError(f"prompt_indices contains out-of-range index: {index}; prompt count is {len(prompts)}")
+        selected.append(prompts[index])
+
+    resolved_width = width or selected[0].width
+    resolved_height = height or selected[0].height
+    if width == 0 or height == 0:
+        mismatched = [
+            f"{index}:{prompt.width}x{prompt.height}"
+            for index, prompt in zip(prompt_indices, selected)
+            if (width == 0 and prompt.width != resolved_width) or (height == 0 and prompt.height != resolved_height)
+        ]
+        if mismatched:
+            raise ValueError(
+                "Selected prompt YAML resolutions differ; set node width/height explicitly. "
+                f"Resolved base is {resolved_width}x{resolved_height}, mismatches: {', '.join(mismatched)}"
+            )
+    return resolved_width, resolved_height
+
+
 def validate_prompts(prompts: list[PromptSettings], allow_unsafe_age_terms: bool = False) -> list[str]:
     errors = []
     unsafe_age_terms = {

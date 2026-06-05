@@ -23,6 +23,7 @@ ComfyUI を再起動すると、`training/anima slider` に `Train Anima Slider 
 - `prompt_yaml`: 同梱 `prompts/*.yaml` から選択
 - `custom_prompt_yaml_path`: 任意の YAML を直接指定する場合に使用
 - `steps`, `lr`, `rank`, `alpha`, `network_preset`, `model_residency`, `lora_weight_dtype`, `width`, `height` などの学習設定
+- `width=0`, `height=0`: 選択した prompt YAML の `width` / `height` を使用します。既存ワークフローで `512` が保存されている場合は、YAML 解像度を使うために `0` へ戻してください。
 
 出力:
 
@@ -69,6 +70,7 @@ YAML は list 形式です。
 ## 注意
 
 - この実装は `anima-slider-experiment` の flow slider trainer を ComfyUI 入力モデル向けに移植したものです。
+- 画角や背景を保ちたい slider は、学習解像度を 512x512 のままにしないでください。chibi/skirt 系の縦長 full-body prompt では `width=0`, `height=0` か、少なくとも `width=896`, `height=1152` を推奨します。
 - `MODEL` に LoRA wrapper を一時注入しますが、学習終了時に元の linear module へ戻します。
 - `steps` の既定値は `600` です。bundled prompt は先頭6件を学習、末尾2件を評価向けに並べているため、通常は `prompt_indices=0,1,2,3,4,5`, `eval_prompt_indices=6,7` を使ってください。短い smoke 確認だけ行う場合は、一時的に `steps=3`, `width=512`, `height=512`, `prompt_indices=0,1,2,3` 程度まで下げてください。
 - `model_residency=prefer_cuda` は ComfyUI のロード後に base model を CUDA へ寄せる best-effort 設定です。OOM になる環境では `dynamic` に戻してください。
