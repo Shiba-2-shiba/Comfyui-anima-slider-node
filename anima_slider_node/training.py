@@ -425,17 +425,20 @@ def flow_loss_for_record(
     sigma = sigmas[step_index].reshape(1).repeat(record.batch_size).to(device)
     teacher_parts = compute_flow_teacher_parts(patcher, latent, sigma, record)
     loss_weight = compute_loss_weight_for_sigma(sigma, loss_weighting_scheme).mean().to(device)
+    effective_eta = eta * record.guidance_scale
 
     if direction_loss == "enhance_only":
-        teacher = teacher_from_parts(teacher_parts, eta=eta, action=record.action).detach()
+        teacher = teacher_from_parts(teacher_parts, eta=effective_eta, action=record.action).detach()
         loss, raw_loss, model_pred = branch_loss_for_teacher(
             patcher, latent, sigma, record.conds["target"], teacher, loss_weight, train=train, lora_multiplier=1.0
         )
-        return loss, build_flow_loss_info(step_index, sigmas, loss_weight, raw_loss, model_pred, teacher_parts, teacher)
+        info = build_flow_loss_info(step_index, sigmas, loss_weight, raw_loss, model_pred, teacher_parts, teacher)
+        info.update({"guidance_scale": record.guidance_scale, "effective_eta": effective_eta})
+        return loss, info
 
     if direction_loss == "bidirectional":
-        enhance_teacher = teacher_from_parts(teacher_parts, eta=eta, action="enhance").detach()
-        erase_teacher = teacher_from_parts(teacher_parts, eta=eta, action="erase").detach()
+        enhance_teacher = teacher_from_parts(teacher_parts, eta=effective_eta, action="enhance").detach()
+        erase_teacher = teacher_from_parts(teacher_parts, eta=effective_eta, action="erase").detach()
         enhance_loss, enhance_raw_loss, enhance_model_pred = branch_loss_for_teacher(
             patcher, latent, sigma, record.conds["target"], enhance_teacher, loss_weight, train=train, lora_multiplier=1.0
         )
@@ -448,6 +451,8 @@ def flow_loss_for_record(
         info.update(
             {
                 "direction_loss": direction_loss,
+                "guidance_scale": record.guidance_scale,
+                "effective_eta": effective_eta,
                 "enhance_raw_loss": float(enhance_raw_loss.detach().cpu().item()),
                 "erase_raw_loss": float(erase_raw_loss.detach().cpu().item()),
                 "enhance_model_pred_norm": tensor_norm(enhance_model_pred),
@@ -659,6 +664,10 @@ def train_lora_from_records(model, records: list[AnimaPromptConds], request: Tra
             "max_step_index": max_step_index,
             "eval_step_indices": eval_step_indices,
             "eta": request.eta,
+            "prompt_guidance_scales": {
+                str(record.prompt_index): record.guidance_scale
+                for record in records
+            },
             "sigmas": [float(value) for value in sigmas.detach().cpu().tolist()],
             "losses": losses,
             "step_records": step_records,

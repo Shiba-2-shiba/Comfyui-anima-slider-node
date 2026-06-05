@@ -3,6 +3,7 @@ from __future__ import annotations
 import sys
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 import torch
 
@@ -10,7 +11,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT))
 
 from anima_slider_node import lora_network, training
-from anima_slider_node.conditioning import AnimaCond
+from anima_slider_node.conditioning import AnimaCond, AnimaPromptConds
 
 
 class Block(torch.nn.Module):
@@ -48,6 +49,10 @@ class FakeDetachedPatcher:
 
     def __init__(self):
         self.model = DetachedApplyModel()
+
+
+class FakeFlowPatcher:
+    load_device = "cpu"
 
 
 class FreezingLoadPatcher:
@@ -230,6 +235,58 @@ class TrainingUtilTests(unittest.TestCase):
                     lora_multiplier=1.0,
                 )
         self.assertIn("Anima LoRA training loss is not differentiable", logs.output[0])
+
+    def test_flow_loss_applies_prompt_guidance_scale_to_eta(self):
+        record = AnimaPromptConds(
+            prompt_index=0,
+            action="enhance",
+            guidance_scale=2.0,
+            width=512,
+            height=512,
+            batch_size=1,
+            texts={"target": "target"},
+            conds={"target": AnimaCond(cond=torch.zeros(1, 1, 1), pooled=None, extra={})},
+        )
+        sigmas = torch.tensor([1.0, 0.5, 0.0])
+        teacher_etas = []
+
+        def fake_teacher(_parts, eta, action):
+            teacher_etas.append((eta, action))
+            return torch.zeros(1, 1, 1, 1)
+
+        with (
+            patch("anima_slider_node.training.anima_forward.make_random_latent", return_value=torch.zeros(1, 1, 1, 1)),
+            patch("anima_slider_node.training.target_trajectory_latent", return_value=torch.zeros(1, 1, 1, 1)),
+            patch(
+                "anima_slider_node.training.compute_flow_teacher_parts",
+                return_value={
+                    "target_base": torch.zeros(1, 1, 1, 1),
+                    "positive_base": torch.ones(1, 1, 1, 1),
+                    "unconditional_base": torch.zeros(1, 1, 1, 1),
+                },
+            ),
+            patch("anima_slider_node.training.teacher_from_parts", side_effect=fake_teacher),
+            patch(
+                "anima_slider_node.training.branch_loss_for_teacher",
+                return_value=(torch.tensor(0.25), torch.tensor(0.25), torch.zeros(1, 1, 1, 1)),
+            ),
+        ):
+            _loss, info = training.flow_loss_for_record(
+                FakeFlowPatcher(),
+                record,
+                width=512,
+                height=512,
+                seed=1,
+                sigmas=sigmas,
+                step_index=1,
+                eta=1.5,
+                loss_weighting_scheme="none",
+                train=True,
+            )
+
+        self.assertEqual(teacher_etas, [(3.0, "enhance")])
+        self.assertEqual(info["guidance_scale"], 2.0)
+        self.assertEqual(info["effective_eta"], 3.0)
 
 
 if __name__ == "__main__":

@@ -13,6 +13,7 @@ venv/
 *.log
 anima_slider_*.json
 生成ログ.txt
+参考/
 
 reports/
 cache/
