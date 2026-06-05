@@ -70,7 +70,7 @@ YAML は list 形式です。
 
 - この実装は `anima-slider-experiment` の flow slider trainer を ComfyUI 入力モデル向けに移植したものです。
 - `MODEL` に LoRA wrapper を一時注入しますが、学習終了時に元の linear module へ戻します。
-- `steps` の既定値は `600` です。短い smoke 確認だけ行う場合は、一時的に `steps=3`, `width=512`, `height=512`, `prompt_indices=0,1,2,3` 程度まで下げてください。
+- `steps` の既定値は `600` です。bundled prompt は先頭6件を学習、末尾2件を評価向けに並べているため、通常は `prompt_indices=0,1,2,3,4,5`, `eval_prompt_indices=6,7` を使ってください。短い smoke 確認だけ行う場合は、一時的に `steps=3`, `width=512`, `height=512`, `prompt_indices=0,1,2,3` 程度まで下げてください。
 - `model_residency=prefer_cuda` は ComfyUI のロード後に base model を CUDA へ寄せる best-effort 設定です。OOM になる環境では `dynamic` に戻してください。
 - `lora_weight_dtype=base` は旧挙動に近く、base model が bf16 なら LoRA weight も bf16 になります。sd-scripts の通常の Anima LoRA 学習に寄せるなら `fp32` を使ってください。
 - 16GB VRAMで1024x1024を狙う場合も、LoRA対象を `attn_only` へ削るのではなく、まず `attn_mlp` と `gradient_checkpointing=True` の組み合わせで確認してください。
