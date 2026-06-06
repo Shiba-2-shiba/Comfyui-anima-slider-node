@@ -91,13 +91,19 @@ class PromptUtilTests(unittest.TestCase):
     def test_age_fullbody_v4_preserves_bright_background_in_every_role(self):
         prompts = prompt_util.load_prompts_from_yaml(REPO_ROOT / "prompts" / "prompts-anima-age_slider_fullbody_v4.yaml")
 
-        for prompt in prompts:
+        for index, prompt in enumerate(prompts):
             for text in (prompt.target, prompt.positive, prompt.unconditional, prompt.neutral):
-                self.assertIn("uncropped full body", text)
-                self.assertIn("head-to-toe visible", text)
-                self.assertIn("bright floor", text)
+                if index in {4, 5}:
+                    self.assertIn("upper body", text)
+                    self.assertIn("face clearly visible", text)
+                else:
+                    self.assertIn("uncropped full body", text)
+                    self.assertIn("head-to-toe visible", text)
+                    self.assertIn("bright floor", text)
                 self.assertIn("no dark background", text)
                 self.assertIn("background unchanged", text)
+                self.assertIn("dark brown hair", text)
+                self.assertIn("neutral colors", text)
 
     def test_age_fullbody_v4_uses_intentionally_strong_age_terms(self):
         prompts = prompt_util.load_prompts_from_yaml(REPO_ROOT / "prompts" / "prompts-anima-age_slider_fullbody_v4.yaml")
@@ -113,6 +119,15 @@ class PromptUtilTests(unittest.TestCase):
             self.assertIn("deep facial wrinkles", positive)
             self.assertIn("young girl", unconditional)
             self.assertIn("toddler", unconditional)
+
+    def test_age_fullbody_v4_avoids_color_axis_terms(self):
+        prompts = prompt_util.load_prompts_from_yaml(REPO_ROOT / "prompts" / "prompts-anima-age_slider_fullbody_v4.yaml")
+        rejected_terms = {"pink hair", "red hair", "blonde hair", "silver hair", "gray hair", "white hair"}
+
+        for prompt in prompts:
+            joined = " ".join([prompt.target, prompt.positive, prompt.unconditional, prompt.neutral]).lower()
+            for term in rejected_terms:
+                self.assertNotIn(term, joined)
 
     def test_validate_prompts_rejects_child_terms_by_default(self):
         prompt = prompt_util.PromptSettings(
