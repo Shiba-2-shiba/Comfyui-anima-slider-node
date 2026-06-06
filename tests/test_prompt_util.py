@@ -116,9 +116,16 @@ class PromptUtilTests(unittest.TestCase):
             positive = prompt.positive.lower()
             unconditional = prompt.unconditional.lower()
             self.assertIn("very elderly woman", positive)
+            self.assertIn("feminine elderly face", positive)
+            self.assertIn("elderly female face", positive)
             self.assertIn("deep facial wrinkles", positive)
+            self.assertIn("elderly feminine body shape", positive)
+            self.assertIn("thin elderly arms", positive)
             self.assertIn("young girl", unconditional)
             self.assertIn("toddler", unconditional)
+            self.assertIn("petite youthful build", unconditional)
+            self.assertIn("slim youthful arms", unconditional)
+            self.assertNotIn("chibi", unconditional)
 
     def test_age_fullbody_v4_avoids_color_axis_terms(self):
         prompts = prompt_util.load_prompts_from_yaml(REPO_ROOT / "prompts" / "prompts-anima-age_slider_fullbody_v4.yaml")
