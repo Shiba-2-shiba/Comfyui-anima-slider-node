@@ -2,6 +2,12 @@
 
 このディレクトリの prompt YAML は、Anima/Cosmos RFlow 向け Slider LoRA の学習方向を定義する。各 prompt は `target` を基準に、`positive` と `unconditional` の差分だけが目的の slider 概念になるように作る。
 
+## Refactor tracking
+
+- `prompt-refactor-spec.md` — prompt refactor rules and acceptance criteria.
+- `prompt-refactor-progress.md` — per-file refactor status and risks.
+- `prompt-refactor-tasks.md` — ordered task checklist for category-by-category cleanup.
+
 ## 基本方針
 
 - `target` と `neutral` は、学習したい属性を含まない基準 prompt にする。
