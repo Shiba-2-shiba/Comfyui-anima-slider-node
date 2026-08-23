@@ -39,17 +39,100 @@ def _save_lora_and_report(lora_sd: dict, report: dict, output_lora_prefix: str) 
     report = dict(report)
     report["output_lora"] = lora_path
     report["output_report"] = report_path
-    save_file(
-        lora_sd,
-        lora_path,
-        metadata={
-            "format": "pt",
-            "trainer_type": "comfyui_flow_slider",
-            "note": "Experimental Anima/Cosmos RFlow FLUX-style slider LoRA trained inside ComfyUI.",
-        },
-    )
+    trainer_type = str(report.get("trainer_type", "comfyui_flow_slider"))
+    optimizer = report.get("optimizer", {})
+    optimizer_type = str(optimizer.get("type", "adamw")) if isinstance(optimizer, dict) else "adamw"
+    metadata = {
+        "format": "pt",
+        "trainer_type": trainer_type,
+        "optimizer_type": optimizer_type,
+        "note": "Experimental Anima/Cosmos RFlow FLUX-style slider LoRA trained inside ComfyUI.",
+    }
+    if isinstance(optimizer, dict) and optimizer.get("implementation_version"):
+        metadata["optimizer_version"] = str(optimizer["implementation_version"])
+    save_file(lora_sd, lora_path, metadata=metadata)
     Path(report_path).write_text(json.dumps(report, indent=2), encoding="utf-8")
     return lora_path, report_path
+
+
+def _training_inputs(
+    *,
+    lr_default: float,
+    lora_weight_dtype_options: list[str],
+    output_lora_prefix: str,
+    qpola: bool = False,
+) -> list:
+    optimizer_inputs = []
+    if qpola:
+        optimizer_inputs = [
+            io.Float.Input(
+                "qpola_eps",
+                default=1e-8,
+                min=1e-12,
+                max=1e-2,
+                step=1e-8,
+                tooltip="Epsilon used by QPOLA gradient-scale normalization.",
+            ),
+            io.Boolean.Input(
+                "qpola_low_vram",
+                default=True,
+                tooltip="Release the CUDA allocator cache after every QPOLA step. This may reduce cached VRAM but can slow training.",
+            ),
+        ]
+    return [
+        io.Model.Input("model", tooltip="Loaded diffusion model to train against."),
+        io.Clip.Input("clip", tooltip="Loaded text encoder used to encode the prompt YAML."),
+        io.Vae.Input("vae", tooltip="Accepted for workflow parity with Anima pipelines; the current text-only trainer does not encode images."),
+        io.Combo.Input("prompt_yaml", options=PROMPT_FILES or [""], default=DEFAULT_PROMPT, tooltip="Prompt YAML bundled with this custom node."),
+        io.String.Input(
+            "custom_prompt_yaml_path",
+            default="",
+            tooltip="Optional absolute or ComfyUI-working-directory-relative YAML path. Overrides prompt_yaml when set.",
+        ),
+        io.String.Input("prompt_indices", default="0,1,2,3,4,5", tooltip="Comma-separated prompt indices to cycle during training."),
+        io.String.Input("eval_prompt_indices", default="6,7", tooltip="Comma-separated prompt indices for before/after eval. Empty uses prompt_indices."),
+        io.Int.Input("steps", default=DEFAULT_STEPS, min=1, max=100000, tooltip="Training optimizer steps."),
+        io.Float.Input("lr", default=lr_default, min=0.0, max=1.0, step=0.0000001, tooltip="Fallback LoRA learning rate."),
+        *optimizer_inputs,
+        io.Int.Input("rank", default=16, min=1, max=256, tooltip="Fallback LoRA rank."),
+        io.Float.Input("alpha", default=16.0, min=0.0, max=1024.0, step=0.1, tooltip="LoRA alpha."),
+        io.Combo.Input("network_preset", options=sorted(config.NETWORK_PRESETS), default="attn_mlp", tooltip="LoRA target preset."),
+        io.String.Input("network_reg_dims", multiline=True, default="", tooltip="Optional YAML mapping of regex fullmatch patterns to LoRA ranks."),
+        io.String.Input("network_reg_lrs", multiline=True, default="", tooltip="Optional YAML mapping of regex fullmatch patterns to learning rates."),
+        io.Combo.Input("model_residency", options=["prefer_cuda", "dynamic"], default="prefer_cuda", tooltip="Best-effort base model residency after ComfyUI loading. Falls back to DynamicVRAM behavior if CUDA promotion fails."),
+        io.Combo.Input("lora_weight_dtype", options=lora_weight_dtype_options, default="fp32", tooltip="Trainable LoRA weight dtype. QPOLA phase 1 requires fp32." if qpola else "Trainable LoRA weight dtype. fp32 is recommended; base/bf16 reduce VRAM but may lose small updates."),
+        io.Boolean.Input("gradient_checkpointing", default=True, tooltip="Checkpoint trainable diffusion blocks during LoRA training to reduce activation VRAM."),
+        io.Boolean.Input("skip_initial_eval", default=True, tooltip="Skip the pre-training eval pass for OOM isolation. Not a quality substitute."),
+        io.Boolean.Input("skip_final_eval", default=False, tooltip="Skip the post-training eval pass for OOM isolation. Not a quality substitute."),
+        io.Int.Input("width", default=0, min=0, max=4096, step=16, tooltip="Training latent width in pixels. 0 uses the selected prompt YAML resolution."),
+        io.Int.Input("height", default=0, min=0, max=4096, step=16, tooltip="Training latent height in pixels. 0 uses the selected prompt YAML resolution."),
+        io.Int.Input("num_inference_steps", default=20, min=3, max=200, tooltip="Number of simple scheduler sigmas."),
+        io.Combo.Input("timestep_sampling", options=["uniform", "mid", "early_late", "sigmoid", "shift", "flux_shift"], default="shift"),
+        io.Float.Input("sigmoid_scale", default=1.0, min=0.01, max=20.0, step=0.01),
+        io.Float.Input("discrete_flow_shift", default=3.0, min=0.01, max=20.0, step=0.01),
+        io.Combo.Input("loss_weighting_scheme", options=["none", "sigma_sqrt", "cosmap"], default="none"),
+        io.Combo.Input("direction_loss", options=["enhance_only", "bidirectional"], default="enhance_only"),
+        io.Float.Input("teacher_guidance_scale", default=1.0, min=0.0, max=20.0, step=0.01, tooltip="Global multiplier applied after each prompt YAML guidance_scale."),
+        io.Combo.Input("teacher_norm_reference", options=["neutral", "positive", "target", "none"], default="positive", tooltip="Output norm reference for the teacher signal. neutral usually makes stronger sliders less prone to scale blow-up."),
+        io.Int.Input("min_step_index", default=-1, min=-1, max=10000, tooltip="-1 uses the default lower bound."),
+        io.Int.Input("max_step_index", default=-1, min=-1, max=10000, tooltip="-1 uses the default upper bound."),
+        io.String.Input("eval_step_indices", default="", tooltip="Comma-separated eval step indices. Empty uses midpoint."),
+        io.Float.Input("eta", default=1.0, min=0.0, max=20.0, step=0.01),
+        io.Int.Input("seed", default=961218314523996, min=0, max=0xFFFFFFFFFFFFFFFF),
+        io.Int.Input("eval_seed", default=961218314523996, min=0, max=0xFFFFFFFFFFFFFFFF),
+        io.Boolean.Input("vary_seed", default=True),
+        io.Boolean.Input("allow_unsafe_age_terms", default=False),
+        io.String.Input("output_lora_prefix", default=output_lora_prefix, tooltip="Output prefix under the ComfyUI output directory."),
+    ]
+
+
+def _training_outputs() -> list:
+    return [
+        io.Custom("LORA_MODEL").Output(display_name="lora"),
+        io.String.Output(display_name="report_json"),
+        io.String.Output(display_name="lora_path"),
+        io.String.Output(display_name="report_path"),
+    ]
 
 
 class AnimaSliderTrainLoraNode(io.ComfyNode):
@@ -64,56 +147,12 @@ class AnimaSliderTrainLoraNode(io.ComfyNode):
             is_experimental=True,
             is_output_node=True,
             not_idempotent=True,
-            inputs=[
-                io.Model.Input("model", tooltip="Loaded diffusion model to train against."),
-                io.Clip.Input("clip", tooltip="Loaded text encoder used to encode the prompt YAML."),
-                io.Vae.Input("vae", tooltip="Accepted for workflow parity with Anima pipelines; the current text-only trainer does not encode images."),
-                io.Combo.Input("prompt_yaml", options=PROMPT_FILES or [""], default=DEFAULT_PROMPT, tooltip="Prompt YAML bundled with this custom node."),
-                io.String.Input(
-                    "custom_prompt_yaml_path",
-                    default="",
-                    tooltip="Optional absolute or ComfyUI-working-directory-relative YAML path. Overrides prompt_yaml when set.",
-                ),
-                io.String.Input("prompt_indices", default="0,1,2,3,4,5", tooltip="Comma-separated prompt indices to cycle during training."),
-                io.String.Input("eval_prompt_indices", default="6,7", tooltip="Comma-separated prompt indices for before/after eval. Empty uses prompt_indices."),
-                io.Int.Input("steps", default=DEFAULT_STEPS, min=1, max=100000, tooltip="Training optimizer steps."),
-                io.Float.Input("lr", default=0.000005, min=0.0, max=1.0, step=0.0000001, tooltip="Fallback LoRA learning rate."),
-                io.Int.Input("rank", default=16, min=1, max=256, tooltip="Fallback LoRA rank."),
-                io.Float.Input("alpha", default=16.0, min=0.0, max=1024.0, step=0.1, tooltip="LoRA alpha."),
-                io.Combo.Input("network_preset", options=sorted(config.NETWORK_PRESETS), default="attn_mlp", tooltip="LoRA target preset."),
-                io.String.Input("network_reg_dims", multiline=True, default="", tooltip="Optional YAML mapping of regex fullmatch patterns to LoRA ranks."),
-                io.String.Input("network_reg_lrs", multiline=True, default="", tooltip="Optional YAML mapping of regex fullmatch patterns to learning rates."),
-                io.Combo.Input("model_residency", options=["prefer_cuda", "dynamic"], default="prefer_cuda", tooltip="Best-effort base model residency after ComfyUI loading. Falls back to DynamicVRAM behavior if CUDA promotion fails."),
-                io.Combo.Input("lora_weight_dtype", options=["fp32", "auto", "base", "bf16"], default="fp32", tooltip="Trainable LoRA weight dtype. fp32 is recommended; base/bf16 reduce VRAM but may lose small updates."),
-                io.Boolean.Input("gradient_checkpointing", default=True, tooltip="Checkpoint trainable diffusion blocks during LoRA training to reduce activation VRAM."),
-                io.Boolean.Input("skip_initial_eval", default=True, tooltip="Skip the pre-training eval pass for OOM isolation. Not a quality substitute."),
-                io.Boolean.Input("skip_final_eval", default=False, tooltip="Skip the post-training eval pass for OOM isolation. Not a quality substitute."),
-                io.Int.Input("width", default=0, min=0, max=4096, step=16, tooltip="Training latent width in pixels. 0 uses the selected prompt YAML resolution."),
-                io.Int.Input("height", default=0, min=0, max=4096, step=16, tooltip="Training latent height in pixels. 0 uses the selected prompt YAML resolution."),
-                io.Int.Input("num_inference_steps", default=20, min=3, max=200, tooltip="Number of simple scheduler sigmas."),
-                io.Combo.Input("timestep_sampling", options=["uniform", "mid", "early_late", "sigmoid", "shift", "flux_shift"], default="shift"),
-                io.Float.Input("sigmoid_scale", default=1.0, min=0.01, max=20.0, step=0.01),
-                io.Float.Input("discrete_flow_shift", default=3.0, min=0.01, max=20.0, step=0.01),
-                io.Combo.Input("loss_weighting_scheme", options=["none", "sigma_sqrt", "cosmap"], default="none"),
-                io.Combo.Input("direction_loss", options=["enhance_only", "bidirectional"], default="enhance_only"),
-                io.Float.Input("teacher_guidance_scale", default=1.0, min=0.0, max=20.0, step=0.01, tooltip="Global multiplier applied after each prompt YAML guidance_scale."),
-                io.Combo.Input("teacher_norm_reference", options=["neutral", "positive", "target", "none"], default="positive", tooltip="Output norm reference for the teacher signal. neutral usually makes stronger sliders less prone to scale blow-up."),
-                io.Int.Input("min_step_index", default=-1, min=-1, max=10000, tooltip="-1 uses the default lower bound."),
-                io.Int.Input("max_step_index", default=-1, min=-1, max=10000, tooltip="-1 uses the default upper bound."),
-                io.String.Input("eval_step_indices", default="", tooltip="Comma-separated eval step indices. Empty uses midpoint."),
-                io.Float.Input("eta", default=1.0, min=0.0, max=20.0, step=0.01),
-                io.Int.Input("seed", default=961218314523996, min=0, max=0xFFFFFFFFFFFFFFFF),
-                io.Int.Input("eval_seed", default=961218314523996, min=0, max=0xFFFFFFFFFFFFFFFF),
-                io.Boolean.Input("vary_seed", default=True),
-                io.Boolean.Input("allow_unsafe_age_terms", default=False),
-                io.String.Input("output_lora_prefix", default="loras/anima_slider", tooltip="Output prefix under the ComfyUI output directory."),
-            ],
-            outputs=[
-                io.Custom("LORA_MODEL").Output(display_name="lora"),
-                io.String.Output(display_name="report_json"),
-                io.String.Output(display_name="lora_path"),
-                io.String.Output(display_name="report_path"),
-            ],
+            inputs=_training_inputs(
+                lr_default=0.000005,
+                lora_weight_dtype_options=["fp32", "auto", "base", "bf16"],
+                output_lora_prefix="loras/anima_slider",
+            ),
+            outputs=_training_outputs(),
         )
 
     @classmethod
@@ -157,8 +196,13 @@ class AnimaSliderTrainLoraNode(io.ComfyNode):
         vary_seed,
         allow_unsafe_age_terms,
         output_lora_prefix,
+        optimizer_type="adamw",
+        optimizer_eps=1e-8,
+        optimizer_low_vram=False,
     ) -> io.NodeOutput:
         del vae
+        if optimizer_type == "qpola" and not output_lora_prefix.strip():
+            raise ValueError("output_lora_prefix must not be empty for QPOLA training")
         prompt_path = _resolve_prompt_path(prompt_yaml, custom_prompt_yaml_path)
         prompts = prompt_util.load_prompts_from_yaml(prompt_path)
         errors = prompt_util.validate_prompts(prompts, allow_unsafe_age_terms=allow_unsafe_age_terms)
@@ -206,6 +250,9 @@ class AnimaSliderTrainLoraNode(io.ComfyNode):
             gradient_checkpointing=gradient_checkpointing,
             skip_initial_eval=skip_initial_eval,
             skip_final_eval=skip_final_eval,
+            optimizer_type=optimizer_type,
+            optimizer_eps=optimizer_eps,
+            optimizer_low_vram=optimizer_low_vram,
         )
 
         from comfy.utils import ProgressBar  # type: ignore
@@ -220,9 +267,42 @@ class AnimaSliderTrainLoraNode(io.ComfyNode):
         return io.NodeOutput(lora_sd, json.dumps(report, indent=2), lora_path, report_path)
 
 
+class AnimaSliderTrainLoraQpolaNode(io.ComfyNode):
+    @classmethod
+    def define_schema(cls) -> io.Schema:
+        return io.Schema(
+            node_id="ComfyuiAnimaSliderTrainLoraQpola",
+            display_name="Train Anima Slider LoRA (QPOLA)",
+            category="training/anima slider",
+            description="Train an experimental Anima/Cosmos flow-slider LoRA with the QPOLA optimizer. NVIDIA CUDA is required.",
+            search_aliases=["anima slider", "flow slider", "train lora", "qpola", "moment free optimizer"],
+            is_experimental=True,
+            is_output_node=True,
+            not_idempotent=True,
+            inputs=_training_inputs(
+                lr_default=0.0001,
+                lora_weight_dtype_options=["fp32"],
+                output_lora_prefix="loras/anima_slider_qpola",
+                qpola=True,
+            ),
+            outputs=_training_outputs(),
+        )
+
+    @classmethod
+    def execute(cls, **kwargs) -> io.NodeOutput:
+        qpola_eps = kwargs.pop("qpola_eps")
+        qpola_low_vram = kwargs.pop("qpola_low_vram")
+        return AnimaSliderTrainLoraNode.execute(
+            **kwargs,
+            optimizer_type="qpola",
+            optimizer_eps=qpola_eps,
+            optimizer_low_vram=qpola_low_vram,
+        )
+
+
 class AnimaSliderExtension(ComfyExtension):
     async def get_node_list(self) -> list[type[io.ComfyNode]]:
-        return [AnimaSliderTrainLoraNode]
+        return [AnimaSliderTrainLoraNode, AnimaSliderTrainLoraQpolaNode]
 
 
 async def comfy_entrypoint() -> AnimaSliderExtension:
@@ -231,8 +311,10 @@ async def comfy_entrypoint() -> AnimaSliderExtension:
 
 NODE_CLASS_MAPPINGS = {
     "ComfyuiAnimaSliderTrainLora": AnimaSliderTrainLoraNode,
+    "ComfyuiAnimaSliderTrainLoraQpola": AnimaSliderTrainLoraQpolaNode,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
     "ComfyuiAnimaSliderTrainLora": "Train Anima Slider LoRA",
+    "ComfyuiAnimaSliderTrainLoraQpola": "Train Anima Slider LoRA (QPOLA)",
 }

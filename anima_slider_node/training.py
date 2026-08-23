@@ -15,6 +15,7 @@ from torch.utils.checkpoint import checkpoint
 
 from . import anima_forward, lora_network, slider_loss
 from .conditioning import AnimaPromptConds
+from .optimizer_factory import build_optimizer
 from .tensor_util import needs_normal_tensor
 
 
@@ -52,6 +53,9 @@ class TrainRequest:
     reg_dims: dict[str, int]
     reg_lrs: dict[str, float]
     model_residency: str
+    optimizer_type: str = "adamw"
+    optimizer_eps: float = 1e-8
+    optimizer_low_vram: bool = False
     lora_weight_dtype: str = "fp32"
     gradient_checkpointing: bool = True
     skip_initial_eval: bool = False
@@ -931,6 +935,7 @@ def train_lora_from_records(model, records: list[AnimaPromptConds], request: Tra
     mp = model.clone()
     restore = []
     lora_sd: dict[str, torch.Tensor] = {}
+    cleanup_attempted = False
     try:
         device = mp.load_device
         image_seq_len = (request.height // 16) * (request.width // 16)
@@ -978,7 +983,13 @@ def train_lora_from_records(model, records: list[AnimaPromptConds], request: Tra
             fallback_lr=request.lr,
             reg_lrs=request.reg_lrs,
         )
-        optimizer = torch.optim.AdamW(optimizer_param_groups, lr=request.lr)
+        optimizer, optimizer_metadata = build_optimizer(
+            optimizer_param_groups,
+            optimizer_type=request.optimizer_type,
+            lr=request.lr,
+            eps=request.optimizer_eps,
+            low_vram=request.optimizer_low_vram,
+        )
         LOGGER.info("Anima slider setup complete: elapsed=%.1fs", time.perf_counter() - setup_started_at)
         precompute_started_at = time.perf_counter()
         LOGGER.info("Anima slider text adapter precompute started: conditions=%s", len(records) * 4)
@@ -1094,6 +1105,11 @@ def train_lora_from_records(model, records: list[AnimaPromptConds], request: Tra
                         teacher_guidance_scale=request.teacher_guidance_scale,
                         teacher_norm_reference=request.teacher_norm_reference,
                     )
+                    if not bool(torch.isfinite(loss.detach()).all().item()):
+                        raise RuntimeError(
+                            "Training loss is not finite before backward; "
+                            f"step={step_number}, prompt_index={record.prompt_index}, optimizer={optimizer_metadata}"
+                        )
                     backward_started_at = time.perf_counter()
                     loss.backward()
                     info.setdefault("phase_timings", {})["backward"] = round(time.perf_counter() - backward_started_at, 3)
@@ -1161,10 +1177,12 @@ def train_lora_from_records(model, records: list[AnimaPromptConds], request: Tra
                 cuda_memory_diagnostics(device),
             )
         finally:
+            cleanup_attempted = True
             mp.cleanup()
 
+        trainer_type = "comfyui_flow_slider_qpola" if request.optimizer_type == "qpola" else "comfyui_flow_slider"
         report = {
-            "trainer_type": "comfyui_flow_slider",
+            "trainer_type": trainer_type,
             "device": str(device),
             "prompt_indices": request.prompt_indices,
             "eval_prompt_indices": request.eval_prompt_indices,
@@ -1173,6 +1191,7 @@ def train_lora_from_records(model, records: list[AnimaPromptConds], request: Tra
             "latent_shape": list(anima_forward.latent_shape_for_resolution(mp, request.width, request.height, train_records[0].batch_size)),
             "steps": request.steps,
             "lr": request.lr,
+            "optimizer": optimizer_metadata,
             "rank": request.rank,
             "alpha": request.alpha,
             "injected_targets": len(injected),
@@ -1220,5 +1239,10 @@ def train_lora_from_records(model, records: list[AnimaPromptConds], request: Tra
         }
         return lora_sd, report
     finally:
-        if restore:
-            lora_network.restore_linear_modules(restore)
+        try:
+            if not cleanup_attempted:
+                cleanup_attempted = True
+                mp.cleanup()
+        finally:
+            if restore:
+                lora_network.restore_linear_modules(restore)

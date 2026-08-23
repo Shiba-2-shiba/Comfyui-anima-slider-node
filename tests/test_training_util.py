@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import sys
 import unittest
+from dataclasses import fields
 from pathlib import Path
 from types import ModuleType, SimpleNamespace
 from unittest import mock
@@ -31,6 +32,13 @@ class FakeDiffusion(torch.nn.Module):
 
 
 class TrainingUtilTests(unittest.TestCase):
+    def test_train_request_optimizer_defaults_preserve_adamw_behavior(self):
+        defaults = {field.name: field.default for field in fields(training.TrainRequest)}
+
+        self.assertEqual(defaults["optimizer_type"], "adamw")
+        self.assertEqual(defaults["optimizer_eps"], 1e-8)
+        self.assertFalse(defaults["optimizer_low_vram"])
+
     def test_parse_indices_uses_fallback_when_missing(self):
         self.assertEqual(training.parse_indices("", 7), [7])
         self.assertEqual(training.parse_indices(None, 7), [7])
@@ -426,7 +434,11 @@ class TrainingUtilTests(unittest.TestCase):
 
         class SourceModel:
             def clone(self):
-                return SimpleNamespace(model=torch.nn.Linear(3, 4), load_device="cpu")
+                return SimpleNamespace(
+                    model=torch.nn.Linear(3, 4),
+                    load_device="cpu",
+                    cleanup=lambda: calls.append("cleanup"),
+                )
 
         fake_management = ModuleType("comfy.model_management")
 
@@ -488,7 +500,71 @@ class TrainingUtilTests(unittest.TestCase):
             with self.assertRaises(StopSetup):
                 training.train_lora_from_records(SourceModel(), [SimpleNamespace()], request)
 
-        self.assertEqual(calls, ["load_models_gpu", "materialize", "freeze", "inject"])
+        self.assertEqual(calls, ["load_models_gpu", "materialize", "freeze", "inject", "cleanup"])
+
+    def test_optimizer_setup_failure_restores_lora_and_cleans_model(self):
+        class StopOptimizer(Exception):
+            pass
+
+        cleanup_calls = []
+        cloned_model = FakeDiffusion()
+        patcher = SimpleNamespace(
+            model=cloned_model,
+            load_device="cpu",
+            cleanup=lambda: cleanup_calls.append("cleanup"),
+        )
+
+        class SourceModel:
+            def clone(self):
+                return patcher
+
+        fake_management = ModuleType("comfy.model_management")
+        fake_management.load_models_gpu = lambda _models, force_full_load=False: None
+        fake_comfy = ModuleType("comfy")
+        fake_comfy.model_management = fake_management
+        request = training.TrainRequest(
+            prompt_indices=[0],
+            eval_prompt_indices=[0],
+            steps=1,
+            lr=0.0001,
+            rank=2,
+            alpha=2.0,
+            width=16,
+            height=16,
+            num_inference_steps=3,
+            scheduler_name="simple",
+            timestep_sampling="mid",
+            sigmoid_scale=1.0,
+            discrete_flow_shift=1.0,
+            loss_weighting_scheme="none",
+            direction_loss="enhance_only",
+            teacher_guidance_scale=1.0,
+            teacher_norm_reference="positive",
+            min_step_index=None,
+            max_step_index=None,
+            eval_step_indices=None,
+            eta=1.0,
+            seed=1,
+            eval_seed=1,
+            vary_seed=False,
+            include_patterns=["model.diffusion_model.blocks.*.self_attn.*_proj"],
+            exclude_patterns=[],
+            reg_dims={},
+            reg_lrs={},
+            model_residency="dynamic",
+            optimizer_type="qpola",
+        )
+
+        with (
+            mock.patch.dict(sys.modules, {"comfy": fake_comfy, "comfy.model_management": fake_management}),
+            mock.patch.object(training, "materialize_inference_tensors_for_training", return_value={}),
+            mock.patch.object(training, "build_optimizer", side_effect=StopOptimizer()),
+        ):
+            with self.assertRaises(StopOptimizer):
+                training.train_lora_from_records(SourceModel(), [SimpleNamespace()], request)
+
+        self.assertEqual(cleanup_calls, ["cleanup"])
+        self.assertIsInstance(cloned_model.diffusion_model.blocks[0].self_attn.q_proj, torch.nn.Linear)
 
     def test_ensure_trainable_loss_rejects_detached_loss_with_diagnostics(self):
         model = FakeDiffusion()

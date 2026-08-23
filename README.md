@@ -34,6 +34,29 @@ ComfyUI を再起動すると、`training/anima slider` に `Train Anima Slider 
 
 LoRA と report は ComfyUI の output directory 配下に保存されます。`output_lora_prefix` の既定値は `loras/anima_slider` です。
 
+## QPOLA optimizer ノード
+
+`Train Anima Slider LoRA (QPOLA)` は、既存ノードと同じ prompt、teacher、MSE loss、LoRA対象を使い、AdamWの代わりにQPOLA v1.0.4でtrainable LoRA weightを更新する実験ノードです。
+
+要件:
+
+- NVIDIA CUDA環境
+- `lora_weight_dtype=fp32`（初期実装では固定）
+- 同梱PTXをロードできるCUDA driver
+
+QPOLA固有設定:
+
+- `lr`: 既定値 `1e-4`。最初の比較候補は `3e-5`, `1e-4`, `3e-4` です。
+- `qpola_eps`: 局所勾配スケール正規化用epsilon。既定値は `1e-8` です。
+- `qpola_low_vram`: 各step後にCUDA allocator cacheを解放します。既定値は有効ですが、学習が遅くなる場合は無効化して比較してください。
+- `output_lora_prefix`: 既定値は `loras/anima_slider_qpola` です。
+
+QPOLAを初期化または実行できない場合、ノードはエラーで停止します。結果のoptimizerを偽らないため、AdamWへの自動フォールバックは行いません。report JSONとsafetensors metadataにはoptimizer種別とQPOLA versionが保存されます。
+
+`simple scheduler` はdiffusion sigma列を作る設定であり、learning-rate schedulerではありません。QPOLA使用時も維持されます。
+
+実装契約とA/B評価条件は [QPOLA_NODE_SPEC.md](QPOLA_NODE_SPEC.md) を参照してください。
+
 ## 16GB VRAM向けの確認手順
 
 16GB VRAMで高解像度学習を狙う場合は、`network_preset=attn_mlp` を維持し、`model_residency=prefer_cuda` と `gradient_checkpointing=True` を基本設定にしてください。`dynamic` はCUDA常駐が失敗する場合の最後の手段です。
@@ -77,3 +100,7 @@ YAML は list 形式です。
 - `lora_weight_dtype=base` は旧挙動に近く、base model が bf16 なら LoRA weight も bf16 になります。sd-scripts の通常の Anima LoRA 学習に寄せるなら `fp32` を使ってください。
 - 16GB VRAMで1024x1024を狙う場合も、LoRA対象を `attn_only` へ削るのではなく、まず `attn_mlp` と `gradient_checkpointing=True` の組み合わせで確認してください。
 - bundled prompt のうち年齢語を含む YAML は `allow_unsafe_age_terms=True` が必要な場合があります。
+
+## Third-party notice
+
+QPOLA v1.0.4のoptimizer loader、CUDA source、PTXをApache License 2.0に基づいて同梱しています。ライセンスと由来は `anima_slider_node/third_party/qpola/LICENSE` および `NOTICE.md` を参照してください。

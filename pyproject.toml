@@ -4,10 +4,26 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "comfyui-anima-slider-node"
-version = "0.1.0"
+version = "0.2.0"
 description = "ComfyUI custom node for experimental Anima/Cosmos flow-slider LoRA training."
 requires-python = ">=3.10"
 
 [tool.setuptools]
-packages = ["anima_slider_node"]
+include-package-data = true
+packages = [
+    "comfyui_anima_slider_node",
+    "comfyui_anima_slider_node.anima_slider_node",
+    "comfyui_anima_slider_node.anima_slider_node.third_party",
+    "comfyui_anima_slider_node.anima_slider_node.third_party.qpola",
+]
+
+[tool.setuptools.package-dir]
+comfyui_anima_slider_node = "."
+"comfyui_anima_slider_node.anima_slider_node" = "anima_slider_node"
+"comfyui_anima_slider_node.anima_slider_node.third_party" = "anima_slider_node/third_party"
+"comfyui_anima_slider_node.anima_slider_node.third_party.qpola" = "anima_slider_node/third_party/qpola"
+
+[tool.setuptools.package-data]
+comfyui_anima_slider_node = ["README.md", "QPOLA_NODE_SPEC.md", "prompts/*.yaml"]
+"comfyui_anima_slider_node.anima_slider_node.third_party.qpola" = ["LICENSE", "NOTICE.md", "*.cu", "*.ptx"]
 
