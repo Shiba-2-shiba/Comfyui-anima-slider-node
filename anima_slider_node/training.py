@@ -20,6 +20,10 @@ from .tensor_util import needs_normal_tensor
 
 
 LOGGER = logging.getLogger(__name__)
+SUPPORTED_ANIMA_VARIANTS = {
+    28: "anima_base_28",
+    40: "anima_2_9b_40",
+}
 
 
 @dataclass(frozen=True)
@@ -85,6 +89,64 @@ def validate_indices(indices: list[int], record_count: int, label: str) -> None:
 def validate_anima_resolution(width: int, height: int, step: int = 16):
     if width % step != 0 or height % step != 0:
         raise ValueError(f"Anima training resolution must be divisible by {step}, got {width}x{height}")
+
+
+def _unwrap_loaded_model(model_or_patcher):
+    return getattr(model_or_patcher, "model", model_or_patcher)
+
+
+def _resolve_unet_config(model_or_patcher) -> dict[str, Any]:
+    loaded_model = _unwrap_loaded_model(model_or_patcher)
+    model_config = getattr(loaded_model, "model_config", None)
+    unet_config = getattr(model_config, "unet_config", None)
+    if not isinstance(unet_config, dict):
+        raise ValueError("Loaded model does not expose model_config.unet_config required for Anima training")
+    return unet_config
+
+
+def _resolve_diffusion_blocks(model_or_patcher):
+    loaded_model = _unwrap_loaded_model(model_or_patcher)
+    diffusion_model = getattr(loaded_model, "diffusion_model", None)
+    blocks = getattr(diffusion_model, "blocks", None)
+    if blocks is None:
+        raise ValueError("Loaded model does not expose diffusion_model.blocks required for Anima training")
+    return blocks
+
+
+def resolve_anima_model_profile(model_or_patcher) -> dict[str, object]:
+    unet_config = _resolve_unet_config(model_or_patcher)
+    image_model = unet_config.get("image_model")
+    if image_model != "anima":
+        raise ValueError(f"Train Anima Slider LoRA requires a ComfyUI Anima model; got image_model={image_model!r}")
+
+    configured_block_count = unet_config.get("num_blocks")
+    if not isinstance(configured_block_count, int) or configured_block_count <= 0:
+        raise ValueError("ComfyUI did not provide a valid Anima num_blocks in model_config.unet_config")
+
+    actual_block_count = len(_resolve_diffusion_blocks(model_or_patcher))
+    if configured_block_count != actual_block_count:
+        raise ValueError(
+            f"Configured Anima num_blocks ({configured_block_count}) did not match "
+            f"loaded diffusion_model.blocks ({actual_block_count})"
+        )
+
+    anima_variant = SUPPORTED_ANIMA_VARIANTS.get(actual_block_count)
+    if anima_variant is None:
+        raise ValueError(
+            f"Unsupported Anima block count: {actual_block_count}. "
+            "Supported variants: 28 (anima_base_28), 40 (anima_2_9b_40)"
+        )
+
+    return {
+        "model_family": "anima",
+        "image_model": "anima",
+        "anima_variant": anima_variant,
+        "anima_block_count": actual_block_count,
+        "configured_block_count": configured_block_count,
+        "actual_block_count": actual_block_count,
+        "lora_block_layout": "native",
+        "target_model_signature": f"anima:{actual_block_count}",
+    }
 
 
 def progress_log_interval(total_steps: int, target_logs: int = 20) -> int:
@@ -944,6 +1006,8 @@ def train_lora_from_records(model, records: list[AnimaPromptConds], request: Tra
 
         setup_started_at = time.perf_counter()
         comfy.model_management.load_models_gpu([mp], force_full_load=True)
+        model_profile = resolve_anima_model_profile(mp)
+        LOGGER.info("Anima slider resolved model profile: %s", model_profile)
         materialization_summary = materialize_inference_tensors_for_training(mp.model)
         LOGGER.info("Anima slider training tensor materialization: %s", materialization_summary)
 
@@ -1184,6 +1248,11 @@ def train_lora_from_records(model, records: list[AnimaPromptConds], request: Tra
         report = {
             "trainer_type": trainer_type,
             "device": str(device),
+            "model_profile": model_profile,
+            "anima_variant": model_profile["anima_variant"],
+            "anima_block_count": model_profile["anima_block_count"],
+            "lora_block_layout": model_profile["lora_block_layout"],
+            "target_model_signature": model_profile["target_model_signature"],
             "prompt_indices": request.prompt_indices,
             "eval_prompt_indices": request.eval_prompt_indices,
             "width": request.width,

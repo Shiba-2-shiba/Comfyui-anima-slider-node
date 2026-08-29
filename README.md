@@ -34,6 +34,20 @@ ComfyUI を再起動すると、`training/anima slider` に `Train Anima Slider 
 
 LoRA と report は ComfyUI の output directory 配下に保存されます。`output_lora_prefix` の既定値は `loras/anima_slider` です。
 
+学習時は、ComfyUI が `MODEL` に解決済みで持っている `model_config.unet_config["image_model"]` と `num_blocks`、および実際の `diffusion_model.blocks` 数から Anima variant を判定します。現状の対応は次の 2 種類です。
+
+- `anima_base_28`: Anima base 系の 28 block モデル
+- `anima_2_9b_40`: Anima 2.9B 系の 40 block モデル
+
+それ以外の block 数や、`num_blocks` と実 block 数が一致しないロード状態は未対応としてエラーにします。保存される report JSON と `.safetensors` metadata には `anima_variant`, `anima_block_count`, `lora_block_layout=native`, `target_model_signature` が入ります。
+
+互換性の目安:
+
+- 28 block で学習した LoRA -> 28 block Anima base に通常の LoRA loader で適用
+- 40 block で学習した LoRA -> 40 block Anima 2.9B に通常の LoRA loader で適用
+- 28 block で学習した LoRA -> 40 block Anima 2.9B に `Anima29BLoraLoader` と `preserved_blocks` 指定で適用
+- 40 block で学習した LoRA -> 28 block Anima base への縮退適用は未対応
+
 ## QPOLA optimizer ノード
 
 `Train Anima Slider LoRA (QPOLA)` は、既存ノードと同じ prompt、teacher、MSE loss、LoRA対象を使い、AdamWの代わりにQPOLA v1.0.4でtrainable LoRA weightを更新する実験ノードです。

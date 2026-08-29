@@ -229,6 +229,12 @@ class QpolaNodeSchemaTests(unittest.TestCase):
                     {
                         "trainer_type": "comfyui_flow_slider_qpola",
                         "optimizer": {"type": "qpola", "implementation_version": "1.0.4"},
+                        "model_profile": {
+                            "anima_variant": "anima_2_9b_40",
+                            "anima_block_count": 40,
+                            "lora_block_layout": "native",
+                            "target_model_signature": "anima:40",
+                        },
                     },
                     "loras/anima_slider_qpola",
                 )
@@ -236,3 +242,7 @@ class QpolaNodeSchemaTests(unittest.TestCase):
         self.assertEqual(captured["trainer_type"], "comfyui_flow_slider_qpola")
         self.assertEqual(captured["optimizer_type"], "qpola")
         self.assertEqual(captured["optimizer_version"], "1.0.4")
+        self.assertEqual(captured["anima_variant"], "anima_2_9b_40")
+        self.assertEqual(captured["anima_block_count"], "40")
+        self.assertEqual(captured["lora_block_layout"], "native")
+        self.assertEqual(captured["target_model_signature"], "anima:40")

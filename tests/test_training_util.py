@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 import sys
 import unittest
 from dataclasses import fields
@@ -13,6 +14,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT))
 
 from anima_slider_node import lora_network, training
+from anima_slider_node import config
 
 
 class Block(torch.nn.Module):
@@ -29,6 +31,47 @@ class FakeDiffusion(torch.nn.Module):
         super().__init__()
         self.diffusion_model = torch.nn.Module()
         self.diffusion_model.blocks = torch.nn.ModuleList([Block()])
+
+
+class RichAttention(torch.nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.q_proj = torch.nn.Linear(3, 4, bias=False)
+        self.k_proj = torch.nn.Linear(3, 4, bias=False)
+        self.v_proj = torch.nn.Linear(3, 4, bias=False)
+        self.o_proj = torch.nn.Linear(3, 4, bias=False)
+
+
+class RichBlock(torch.nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.self_attn = RichAttention()
+        self.cross_attn = RichAttention()
+        self.mlp = torch.nn.Module()
+        self.mlp.layer1 = torch.nn.Linear(3, 4, bias=False)
+        self.mlp.layer2 = torch.nn.Linear(4, 3, bias=False)
+
+
+class RichDiffusion(torch.nn.Module):
+    def __init__(self, block_count: int, *, image_model: str = "anima", configured_blocks: int | None = None):
+        super().__init__()
+        self.model_config = SimpleNamespace(
+            unet_config={
+                "image_model": image_model,
+                "num_blocks": block_count if configured_blocks is None else configured_blocks,
+            }
+        )
+        self.diffusion_model = torch.nn.Module()
+        self.diffusion_model.blocks = torch.nn.ModuleList([RichBlock() for _ in range(block_count)])
+
+
+def make_fake_patcher(block_count: int, *, image_model: str = "anima", configured_blocks: int | None = None):
+    return SimpleNamespace(
+        model=RichDiffusion(block_count, image_model=image_model, configured_blocks=configured_blocks),
+        load_device="cpu",
+        pre_run=lambda: None,
+        cleanup=lambda: None,
+    )
 
 
 class TrainingUtilTests(unittest.TestCase):
@@ -98,6 +141,35 @@ class TrainingUtilTests(unittest.TestCase):
 
         with self.assertRaisesRegex(ValueError, "Unsupported model_residency"):
             training.promote_model_residency(model, "cpu", "unknown")
+
+    def test_resolve_anima_model_profile_supports_base_28(self):
+        profile = training.resolve_anima_model_profile(make_fake_patcher(28))
+
+        self.assertEqual(profile["anima_variant"], "anima_base_28")
+        self.assertEqual(profile["anima_block_count"], 28)
+        self.assertEqual(profile["configured_block_count"], 28)
+        self.assertEqual(profile["actual_block_count"], 28)
+        self.assertEqual(profile["target_model_signature"], "anima:28")
+        self.assertEqual(profile["lora_block_layout"], "native")
+
+    def test_resolve_anima_model_profile_supports_2_9b_40(self):
+        profile = training.resolve_anima_model_profile(make_fake_patcher(40))
+
+        self.assertEqual(profile["anima_variant"], "anima_2_9b_40")
+        self.assertEqual(profile["anima_block_count"], 40)
+        self.assertEqual(profile["target_model_signature"], "anima:40")
+
+    def test_resolve_anima_model_profile_rejects_non_anima_models(self):
+        with self.assertRaisesRegex(ValueError, "requires a ComfyUI Anima model"):
+            training.resolve_anima_model_profile(make_fake_patcher(28, image_model="cosmos_predict2"))
+
+    def test_resolve_anima_model_profile_rejects_configured_actual_block_mismatch(self):
+        with self.assertRaisesRegex(ValueError, "did not match"):
+            training.resolve_anima_model_profile(make_fake_patcher(40, configured_blocks=28))
+
+    def test_resolve_anima_model_profile_rejects_unknown_anima_block_count(self):
+        with self.assertRaisesRegex(ValueError, "Unsupported Anima block count"):
+            training.resolve_anima_model_profile(make_fake_patcher(36))
 
     def test_choose_training_step_index_shift_stays_in_bounds(self):
         sigmas = torch.tensor([1.0, 0.9, 0.75, 0.5, 0.25, 0.0])
@@ -374,6 +446,34 @@ class TrainingUtilTests(unittest.TestCase):
         self.assertEqual([group["lr"] for group in groups], [0.00001, 0.0001])
         self.assertEqual([item["module_count"] for item in summary], [1, 1])
 
+    def test_anima_presets_scale_target_counts_with_supported_block_depths(self):
+        expected_per_block = {"attn_only": 8, "attn_mlp": 10}
+
+        for block_count, variant in ((28, "anima_base_28"), (40, "anima_2_9b_40")):
+            for preset, per_block in expected_per_block.items():
+                with self.subTest(block_count=block_count, preset=preset):
+                    model = RichDiffusion(block_count)
+                    include_patterns, exclude_patterns = config.preset_patterns(preset)
+
+                    injected, _restore = lora_network.inject_lora_linear_modules(
+                        model,
+                        include_patterns=include_patterns,
+                        exclude_patterns=exclude_patterns,
+                        rank=2,
+                        alpha=2.0,
+                    )
+                    lora_sd = lora_network.lora_state_dict_from_model(model)
+                    block_indexes = {
+                        int(match.group(1))
+                        for key in lora_sd
+                        for match in [re.search(r"blocks\.(\d+)\.", key)]
+                        if match is not None
+                    }
+
+                    self.assertEqual(len(injected), block_count * per_block)
+                    self.assertEqual(max(block_indexes), block_count - 1)
+                    self.assertEqual(training.resolve_anima_model_profile(SimpleNamespace(model=model))["anima_variant"], variant)
+
     def test_lora_training_diagnostics_counts_trainable_lora_parameters(self):
         model = FakeDiffusion()
         lora_network.inject_lora_linear_modules(
@@ -434,11 +534,9 @@ class TrainingUtilTests(unittest.TestCase):
 
         class SourceModel:
             def clone(self):
-                return SimpleNamespace(
-                    model=torch.nn.Linear(3, 4),
-                    load_device="cpu",
-                    cleanup=lambda: calls.append("cleanup"),
-                )
+                patcher = make_fake_patcher(28)
+                patcher.cleanup = lambda: calls.append("cleanup")
+                return patcher
 
         fake_management = ModuleType("comfy.model_management")
 
@@ -502,12 +600,93 @@ class TrainingUtilTests(unittest.TestCase):
 
         self.assertEqual(calls, ["load_models_gpu", "materialize", "freeze", "inject", "cleanup"])
 
+    def test_train_lora_report_records_supported_anima_profile(self):
+        patcher = make_fake_patcher(40)
+
+        class SourceModel:
+            def clone(self):
+                return patcher
+
+        class FakeOptimizer:
+            def zero_grad(self, set_to_none=True):
+                del set_to_none
+
+            def step(self):
+                return None
+
+        fake_management = ModuleType("comfy.model_management")
+        fake_management.load_models_gpu = lambda _models, force_full_load=False: None
+        fake_comfy = ModuleType("comfy")
+        fake_comfy.model_management = fake_management
+        include_patterns, exclude_patterns = config.preset_patterns("attn_only")
+        record = SimpleNamespace(prompt_index=0, batch_size=1, guidance_scale=1.0, action="enhance", conds={"target": object()})
+        request = training.TrainRequest(
+            prompt_indices=[0],
+            eval_prompt_indices=[0],
+            steps=1,
+            lr=0.0001,
+            rank=2,
+            alpha=2.0,
+            width=16,
+            height=16,
+            num_inference_steps=3,
+            scheduler_name="simple",
+            timestep_sampling="mid",
+            sigmoid_scale=1.0,
+            discrete_flow_shift=1.0,
+            loss_weighting_scheme="none",
+            direction_loss="enhance_only",
+            teacher_guidance_scale=1.0,
+            teacher_norm_reference="positive",
+            min_step_index=None,
+            max_step_index=None,
+            eval_step_indices=None,
+            eta=1.0,
+            seed=1,
+            eval_seed=1,
+            vary_seed=False,
+            include_patterns=include_patterns,
+            exclude_patterns=exclude_patterns,
+            reg_dims={},
+            reg_lrs={},
+            model_residency="dynamic",
+            skip_initial_eval=True,
+            skip_final_eval=True,
+        )
+
+        with (
+            mock.patch.dict(sys.modules, {"comfy": fake_comfy, "comfy.model_management": fake_management}),
+            mock.patch.object(training, "materialize_inference_tensors_for_training", return_value={}),
+            mock.patch.object(training, "promote_model_residency", return_value={"mode": "dynamic", "attempted": False}),
+            mock.patch.object(training, "parameter_placement_diagnostics", return_value={"parameters": 0}),
+            mock.patch.object(training, "lora_parameter_placement_diagnostics", return_value={"parameters": 0}),
+            mock.patch.object(training, "cuda_memory_diagnostics", return_value={"device": "cpu"}),
+            mock.patch.object(training, "build_optimizer", return_value=(FakeOptimizer(), {"type": "adamw"})),
+            mock.patch.object(training.anima_forward, "precompute_anima_text_adapter_records", return_value=([record], {"conditions": 4})),
+            mock.patch.object(training.anima_forward, "sigmas_for_steps", return_value=torch.tensor([1.0, 0.5, 0.0])),
+            mock.patch.object(training.anima_forward, "validate_training_step_index", return_value=None),
+            mock.patch.object(training.anima_forward, "latent_shape_for_resolution", return_value=(1, 16, 1, 1)),
+            mock.patch.object(training, "flow_loss_for_record", return_value=(torch.tensor(1.0, requires_grad=True), {"phase_timings": {}})),
+            mock.patch.object(training, "autograd_safe_comfy_kitchen_rope", return_value=training.nullcontext({"patched": False})),
+        ):
+            lora_sd, report = training.train_lora_from_records(SourceModel(), [record], request)
+
+        self.assertTrue(lora_sd)
+        self.assertEqual(report["model_profile"]["anima_variant"], "anima_2_9b_40")
+        self.assertEqual(report["model_profile"]["configured_block_count"], 40)
+        self.assertEqual(report["model_profile"]["actual_block_count"], 40)
+        self.assertEqual(report["anima_variant"], "anima_2_9b_40")
+        self.assertEqual(report["anima_block_count"], 40)
+        self.assertEqual(report["lora_block_layout"], "native")
+        self.assertEqual(report["target_model_signature"], "anima:40")
+        self.assertEqual(report["injected_targets"], 320)
+
     def test_optimizer_setup_failure_restores_lora_and_cleans_model(self):
         class StopOptimizer(Exception):
             pass
 
         cleanup_calls = []
-        cloned_model = FakeDiffusion()
+        cloned_model = RichDiffusion(28)
         patcher = SimpleNamespace(
             model=cloned_model,
             load_device="cpu",

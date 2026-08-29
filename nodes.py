@@ -48,6 +48,13 @@ def _save_lora_and_report(lora_sd: dict, report: dict, output_lora_prefix: str) 
         "optimizer_type": optimizer_type,
         "note": "Experimental Anima/Cosmos RFlow FLUX-style slider LoRA trained inside ComfyUI.",
     }
+    model_profile = report.get("model_profile", {})
+    for key in ("anima_variant", "anima_block_count", "lora_block_layout", "target_model_signature"):
+        value = report.get(key)
+        if value is None and isinstance(model_profile, dict):
+            value = model_profile.get(key)
+        if value is not None:
+            metadata[key] = str(value)
     if isinstance(optimizer, dict) and optimizer.get("implementation_version"):
         metadata["optimizer_version"] = str(optimizer["implementation_version"])
     save_file(lora_sd, lora_path, metadata=metadata)
