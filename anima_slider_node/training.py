@@ -585,17 +585,38 @@ def autograd_safe_comfy_kitchen_rope(enabled: bool = True):
         "apply_rope1": _autograd_rope1,
         "apply_rope_split_half": _autograd_rope_split_half,
     }
+    if hasattr(comfy_kitchen, "rms_rope_split_half"):
+        try:
+            from comfy_kitchen.backends.eager import rope as eager_rope  # type: ignore
+
+            eager_rms = getattr(eager_rope, "rms_rope_split_half", None)
+            if eager_rms is None:
+                ck_ver = getattr(comfy_kitchen, "__version__", "unknown")
+                raise RuntimeError(
+                    f"comfy_kitchen has rms_rope_split_half but comfy_kitchen.backends.eager.rope does not. version={ck_ver}"
+                )
+            replacements["rms_rope_split_half"] = eager_rms
+        except ImportError as exc:
+            ck_ver = getattr(comfy_kitchen, "__version__", "unknown")
+            raise RuntimeError(
+                f"Failed to import comfy_kitchen.backends.eager.rope for rms_rope_split_half: {exc} (version={ck_ver})"
+            ) from exc
+
     patched = []
     namespace = getattr(torch.ops, "comfy_kitchen", None)
     for name, replacement in replacements.items():
         if hasattr(comfy_kitchen, name):
-            patched.append((comfy_kitchen, name, getattr(comfy_kitchen, name)))
-            setattr(comfy_kitchen, name, replacement)
-            summary["patched_ops"].append(f"comfy_kitchen.{name}")
+            original = getattr(comfy_kitchen, name)
+            if original is not replacement:
+                patched.append((comfy_kitchen, name, original))
+                setattr(comfy_kitchen, name, replacement)
+                summary["patched_ops"].append(f"comfy_kitchen.{name}")
         if namespace is not None and hasattr(namespace, name):
-            patched.append((namespace, name, getattr(namespace, name)))
-            setattr(namespace, name, replacement)
-            summary["patched_ops"].append(f"torch.ops.comfy_kitchen.{name}")
+            original = getattr(namespace, name)
+            if original is not replacement:
+                patched.append((namespace, name, original))
+                setattr(namespace, name, replacement)
+                summary["patched_ops"].append(f"torch.ops.comfy_kitchen.{name}")
 
     summary["patched"] = bool(patched)
     if not patched:
