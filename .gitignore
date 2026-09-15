@@ -17,5 +17,6 @@ anima_slider_*.json
 reports/
 cache/
 outputs/
-docs/
+docs/*
+!docs/validation/
 .omx/

@@ -112,8 +112,43 @@ YAML は list 形式です。
 - `steps` の既定値は `600` です。bundled prompt は先頭6件を学習、末尾2件を評価向けに並べているため、通常は `prompt_indices=0,1,2,3,4,5`, `eval_prompt_indices=6,7` を使ってください。短い smoke 確認だけ行う場合は、一時的に `steps=3`, `width=512`, `height=512`, `prompt_indices=0,1,2,3` 程度まで下げてください。
 - `model_residency=prefer_cuda` は ComfyUI のロード後に base model を CUDA へ寄せる best-effort 設定です。OOM になる環境では `dynamic` に戻してください。
 - `lora_weight_dtype=base` は旧挙動に近く、base model が bf16 なら LoRA weight も bf16 になります。sd-scripts の通常の Anima LoRA 学習に寄せるなら `fp32` を使ってください。
-- 16GB VRAMで1024x1024を狙う場合も、LoRA対象を `attn_only` へ削るのではなく、まず `attn_mlp` と `gradient_checkpointing=True` の組み合わせで確認してください。
-- bundled prompt のうち年齢語を含む YAML は `allow_unsafe_age_terms=True` が必要な場合があります。
+## 診断ログとクラウド確認手順
+
+Anima のテキスト由来 Slider LoRA 学習において、逆伝播や演算境界の挙動を追跡するための構造化診断ログが利用可能です。
+
+### デバッグの有効化
+
+環境変数を設定して ComfyUI を再起動します。
+
+- **Paperspace / Jupyter Notebook の場合**:
+  ComfyUI 起動セルより**前**に以下を実行してください。
+  ```python
+  import os
+  os.environ["ANIMA_SLIDER_DEBUG"] = "1"
+  os.environ["ANIMA_SLIDER_DEBUG_SYNC"] = "0"
+  ```
+- **Shell / Terminal の場合**:
+  ```bash
+  export ANIMA_SLIDER_DEBUG=1
+  export ANIMA_SLIDER_DEBUG_SYNC=0
+  ```
+
+※ 通常運用時は `ANIMA_SLIDER_DEBUG=0`（既定値）で使用してください。`debug=0` ではラッパー計測やスナップショット等のオーバーヘッドは一切発生しません。
+
+### クラウド確認A（短縮実行）の推奨設定
+
+| 項目 | 最初の確認 | 次の確認 |
+|---|---|---|
+| width / height | 512 / 512 | 512 / 512、その後1024 / 1024 |
+| steps | 1 | 3、その後1024では1 |
+| prompt_indices | `0` | `0` |
+| skip_initial_eval / skip_final_eval | True / True | True / True |
+| gradient_checkpointing | True | True |
+| seed UI | fixed | fixed |
+| seed | 676193269724873 | 同じ |
+| output_lora_prefix | `loras/anima_autograd_smoke` | 同じ |
+
+ログは `[AnimaSliderDebug] ` プレフィックス付きの 1 行 1 イベント JSON として出力されます。
 
 ## Third-party notice
 

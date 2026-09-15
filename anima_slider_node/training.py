@@ -13,7 +13,7 @@ import torch
 import torch.nn.functional as F
 from torch.utils.checkpoint import checkpoint
 
-from . import anima_forward, lora_network, slider_loss
+from . import anima_forward, lora_network, slider_loss, training_debug
 from .conditioning import AnimaPromptConds
 from .optimizer_factory import build_optimizer
 from .tensor_util import needs_normal_tensor
@@ -602,9 +602,14 @@ def autograd_safe_comfy_kitchen_rope(enabled: bool = True):
                 f"Failed to import comfy_kitchen.backends.eager.rope for rms_rope_split_half: {exc} (version={ck_ver})"
             ) from exc
 
+    wrapped_replacements = {
+        name: training_debug.wrap_rope(name, fn)
+        for name, fn in replacements.items()
+    }
+
     patched = []
     namespace = getattr(torch.ops, "comfy_kitchen", None)
-    for name, replacement in replacements.items():
+    for name, replacement in wrapped_replacements.items():
         if hasattr(comfy_kitchen, name):
             original = getattr(comfy_kitchen, name)
             if original is not replacement:
@@ -621,11 +626,26 @@ def autograd_safe_comfy_kitchen_rope(enabled: bool = True):
     summary["patched"] = bool(patched)
     if not patched:
         summary["reason"] = "no known comfy_kitchen RoPE ops found"
+
+    training_debug.emit_event(
+        "compat_enter",
+        target_ops=list(replacements.keys()),
+        patched_ops=summary["patched_ops"],
+        patched=summary["patched"],
+        reason=summary["reason"],
+    )
+
     try:
         yield summary
     finally:
         for target, name, original in reversed(patched):
             setattr(target, name, original)
+        restored = all(getattr(t, n) is o for t, n, o in patched)
+        training_debug.emit_event(
+            "compat_exit",
+            restored=restored,
+            restored_count=len(patched),
+        )
 
 
 @torch.no_grad()
@@ -882,11 +902,13 @@ def flow_loss_for_record(
     timings["noise"] = time.perf_counter() - started_at
     step_index = anima_forward.validate_training_step_index(sigmas, step_index)
     started_at = time.perf_counter()
-    latent = target_trajectory_latent(patcher, noise, sigmas, step_index=step_index, cond=record.conds["target"])
+    with training_debug.debug_phase("target_trajectory"):
+        latent = target_trajectory_latent(patcher, noise, sigmas, step_index=step_index, cond=record.conds["target"])
     timings["target_trajectory"] = time.perf_counter() - started_at
     sigma = sigmas[step_index].reshape(1).repeat(record.batch_size).to(device)
     started_at = time.perf_counter()
-    teacher_parts = compute_flow_teacher_parts(patcher, latent, sigma, record)
+    with training_debug.debug_phase("teacher"):
+        teacher_parts = compute_flow_teacher_parts(patcher, latent, sigma, record)
     timings["teacher_parts"] = time.perf_counter() - started_at
     loss_weight = compute_loss_weight_for_sigma(sigma, loss_weighting_scheme).mean().to(device)
     prompt_guidance_scale = float(getattr(record, "guidance_scale", 1.0))
@@ -904,9 +926,10 @@ def flow_loss_for_record(
             norm_reference=teacher_norm_reference,
         ).detach()
         started_at = time.perf_counter()
-        loss, raw_loss, model_pred = branch_loss_for_teacher(
-            patcher, latent, sigma, record.conds["target"], teacher, loss_weight, train=train, lora_multiplier=1.0
-        )
+        with training_debug.debug_phase("student_enhance"):
+            loss, raw_loss, model_pred = branch_loss_for_teacher(
+                patcher, latent, sigma, record.conds["target"], teacher, loss_weight, train=train, lora_multiplier=1.0
+            )
         timings["lora_forward_loss"] = time.perf_counter() - started_at
         info = build_flow_loss_info(step_index, sigmas, loss_weight, raw_loss, model_pred, teacher_parts, teacher)
         info["prompt_guidance_scale"] = prompt_guidance_scale
@@ -933,12 +956,14 @@ def flow_loss_for_record(
             norm_reference=teacher_norm_reference,
         ).detach()
         started_at = time.perf_counter()
-        enhance_loss, enhance_raw_loss, enhance_model_pred = branch_loss_for_teacher(
-            patcher, latent, sigma, record.conds["target"], enhance_teacher, loss_weight, train=train, lora_multiplier=1.0
-        )
-        erase_loss, erase_raw_loss, erase_model_pred = branch_loss_for_teacher(
-            patcher, latent, sigma, record.conds["target"], erase_teacher, loss_weight, train=train, lora_multiplier=-1.0
-        )
+        with training_debug.debug_phase("student_enhance"):
+            enhance_loss, enhance_raw_loss, enhance_model_pred = branch_loss_for_teacher(
+                patcher, latent, sigma, record.conds["target"], enhance_teacher, loss_weight, train=train, lora_multiplier=1.0
+            )
+        with training_debug.debug_phase("student_erase"):
+            erase_loss, erase_raw_loss, erase_model_pred = branch_loss_for_teacher(
+                patcher, latent, sigma, record.conds["target"], erase_teacher, loss_weight, train=train, lora_multiplier=-1.0
+            )
         timings["lora_forward_loss"] = time.perf_counter() - started_at
         loss = (enhance_loss + erase_loss) * 0.5
         raw_loss = (enhance_raw_loss + erase_raw_loss) * 0.5
@@ -1076,6 +1101,28 @@ def train_lora_from_records(model, records: list[AnimaPromptConds], request: Tra
             low_vram=request.optimizer_low_vram,
         )
         LOGGER.info("Anima slider setup complete: elapsed=%.1fs", time.perf_counter() - setup_started_at)
+        all_lora_modules = [
+            (name, module)
+            for name, module in mp.model.named_modules()
+            if isinstance(module, lora_network.LoRALinear)
+        ]
+        sampled_lora_modules = training_debug.select_sampled_lora_modules(all_lora_modules, max_modules=6)
+        active_session = training_debug.get_current_session()
+        if active_session is not None:
+            active_session.sampled_lora_modules = sampled_lora_modules
+
+        training_debug.emit_event(
+            "setup_complete",
+            model_profile=model_profile,
+            injected_count=len(injected),
+            lora_module_count=len(all_lora_modules),
+            sampled_module_names=[m[0] for m in sampled_lora_modules],
+            lora_dtype=str(request.lora_weight_dtype),
+            device=str(device),
+            model_placement=model_placement_summary,
+            lora_placement=lora_placement_summary,
+            memory=training_debug.get_memory_summary(sync=active_session.sync if active_session else False),
+        )
         precompute_started_at = time.perf_counter()
         LOGGER.info("Anima slider text adapter precompute started: conditions=%s", len(records) * 4)
         with lora_network.lora_enabled(mp.model, False):
@@ -1174,32 +1221,90 @@ def train_lora_from_records(model, records: list[AnimaPromptConds], request: Tra
                             100.0 * step_number / request.steps,
                             record.prompt_index,
                         )
+                    active_session = training_debug.get_current_session()
+                    if active_session is not None:
+                        active_session.step = step_number
+
                     optimizer.zero_grad(set_to_none=True)
-                    loss, info = flow_loss_for_record(
-                        mp,
-                        record,
-                        width=request.width,
-                        height=request.height,
-                        seed=step_seed,
-                        sigmas=sigmas,
-                        step_index=step_index,
-                        eta=request.eta,
-                        loss_weighting_scheme=request.loss_weighting_scheme,
-                        train=True,
-                        direction_loss=request.direction_loss,
-                        teacher_guidance_scale=request.teacher_guidance_scale,
-                        teacher_norm_reference=request.teacher_norm_reference,
-                    )
+                    with training_debug.debug_phase("forward", step=step_number):
+                        loss, info = flow_loss_for_record(
+                            mp,
+                            record,
+                            width=request.width,
+                            height=request.height,
+                            seed=step_seed,
+                            sigmas=sigmas,
+                            step_index=step_index,
+                            eta=request.eta,
+                            loss_weighting_scheme=request.loss_weighting_scheme,
+                            train=True,
+                            direction_loss=request.direction_loss,
+                            teacher_guidance_scale=request.teacher_guidance_scale,
+                            teacher_norm_reference=request.teacher_norm_reference,
+                        )
                     if not bool(torch.isfinite(loss.detach()).all().item()):
                         raise RuntimeError(
                             "Training loss is not finite before backward; "
                             f"step={step_number}, prompt_index={record.prompt_index}, optimizer={optimizer_metadata}"
                         )
+
+                    snapshot = None
+                    if (
+                        active_session is not None
+                        and active_session.enabled
+                        and step_number <= 2
+                        and active_session.sampled_lora_modules
+                    ):
+                        snapshot = training_debug.snapshot_sampled_lora(active_session.sampled_lora_modules)
+
                     backward_started_at = time.perf_counter()
-                    loss.backward()
+                    with training_debug.debug_phase("backward", step=step_number):
+                        loss.backward()
+                        if active_session is not None and active_session.enabled:
+                            active_session.backward_passed = True
+                            none_grads = 0
+                            finite_grads = 0
+                            nonfinite_grads = 0
+                            grad_norm_sq = 0.0
+                            for p in mp.model.parameters():
+                                if p.requires_grad:
+                                    if p.grad is None:
+                                        none_grads += 1
+                                    elif bool(torch.isfinite(p.grad).all()):
+                                        finite_grads += 1
+                                        grad_norm_sq += float(torch.norm(p.grad.float()).item()) ** 2
+                                    else:
+                                        nonfinite_grads += 1
+                            training_debug.emit_event(
+                                "backward_end",
+                                loss_finite=bool(torch.isfinite(loss.detach()).all().item()),
+                                grad_summary={
+                                    "none_grads": none_grads,
+                                    "finite_grads": finite_grads,
+                                    "nonfinite_grads": nonfinite_grads,
+                                    "total_grad_norm": round(math.sqrt(grad_norm_sq), 8),
+                                },
+                                memory=training_debug.get_memory_summary(sync=active_session.sync),
+                            )
+
                     info.setdefault("phase_timings", {})["backward"] = round(time.perf_counter() - backward_started_at, 3)
                     optimizer_started_at = time.perf_counter()
-                    optimizer.step()
+                    with training_debug.debug_phase("optimizer", step=step_number):
+                        optimizer.step()
+                        if active_session is not None and active_session.enabled:
+                            active_session.optimizer_stepped = True
+                            active_session.success_steps = step_number
+                            delta_info = {}
+                            if snapshot and active_session.sampled_lora_modules:
+                                delta_info = training_debug.compute_sampled_lora_deltas(
+                                    active_session.sampled_lora_modules, snapshot
+                                )
+                            training_debug.emit_event(
+                                "optimizer_step_end",
+                                **delta_info,
+                                memory=training_debug.get_memory_summary(sync=active_session.sync),
+                            )
+
                     info.setdefault("phase_timings", {})["optimizer_step"] = round(time.perf_counter() - optimizer_started_at, 3)
                     info["cuda_memory_after_step"] = cuda_memory_diagnostics(device)
                     loss_value = float(loss.detach().cpu().item())
@@ -1329,10 +1434,23 @@ def train_lora_from_records(model, records: list[AnimaPromptConds], request: Tra
         }
         return lora_sd, report
     finally:
+        cleanup_success = False
+        restore_success = False
         try:
             if not cleanup_attempted:
                 cleanup_attempted = True
                 mp.cleanup()
+            cleanup_success = True
         finally:
             if restore:
                 lora_network.restore_linear_modules(restore)
+                restore_success = True
+            active_session = training_debug.get_current_session()
+            if active_session is not None and active_session.enabled:
+                active_session.restored = restore_success
+                training_debug.emit_event(
+                    "cleanup_end",
+                    cleanup_success=cleanup_success,
+                    restore_success=restore_success,
+                    restored_modules=len(restore) if restore else 0,
+                )

@@ -3,13 +3,15 @@ from __future__ import annotations
 from pathlib import Path
 import json
 import os
+import sys
+import traceback
 
 from safetensors.torch import save_file
 import torch
 
 from comfy_api.latest import ComfyExtension, io
 
-from .anima_slider_node import conditioning, config, prompt_util, training
+from .anima_slider_node import conditioning, config, prompt_util, training, training_debug
 
 
 PACKAGE_ROOT = Path(__file__).resolve().parent
@@ -207,71 +209,133 @@ class AnimaSliderTrainLoraNode(io.ComfyNode):
         optimizer_eps=1e-8,
         optimizer_low_vram=False,
     ) -> io.NodeOutput:
-        del vae
-        if optimizer_type == "qpola" and not output_lora_prefix.strip():
-            raise ValueError("output_lora_prefix must not be empty for QPOLA training")
-        prompt_path = _resolve_prompt_path(prompt_yaml, custom_prompt_yaml_path)
-        prompts = prompt_util.load_prompts_from_yaml(prompt_path)
-        errors = prompt_util.validate_prompts(prompts, allow_unsafe_age_terms=allow_unsafe_age_terms)
-        if errors:
-            raise ValueError("\n".join(errors))
+        with training_debug.debug_session() as session:
+            try:
+                ck_module = sys.modules.get("comfy_kitchen")
+                ck_version = getattr(ck_module, "__version__", "unknown") if ck_module is not None else "not_loaded"
+                training_debug.emit_event(
+                    "run_start",
+                    node_id=cls.define_schema().node_id,
+                    commit=training_debug.get_git_commit(PACKAGE_ROOT),
+                    python_version=sys.version.split()[0],
+                    torch_version=torch.__version__,
+                    comfy_kitchen_version=ck_version,
+                    debug_enabled=session.enabled,
+                    debug_sync=session.sync,
+                    optimizer_type=optimizer_type,
+                    steps=steps,
+                    rank=rank,
+                    alpha=alpha,
+                )
 
-        with torch.inference_mode(False), torch.no_grad():
-            records = conditioning.encode_prompt_conditions(clip, prompts)
-        train_indices = training.parse_indices(prompt_indices, 0)
-        eval_indices = training.parse_indices(eval_prompt_indices, train_indices[0]) if eval_prompt_indices.strip() else train_indices
-        parsed_eval_steps = training.parse_indices(eval_step_indices, 0) if eval_step_indices.strip() else None
-        resolved_width, resolved_height = prompt_util.resolve_training_resolution(prompts, train_indices + eval_indices, width, height)
-        include_patterns, exclude_patterns = config.preset_patterns(network_preset)
-        request = training.TrainRequest(
-            prompt_indices=train_indices,
-            eval_prompt_indices=eval_indices,
-            steps=steps,
-            lr=lr,
-            rank=rank,
-            alpha=alpha,
-            width=resolved_width,
-            height=resolved_height,
-            num_inference_steps=num_inference_steps,
-            scheduler_name="simple",
-            timestep_sampling=timestep_sampling,
-            sigmoid_scale=sigmoid_scale,
-            discrete_flow_shift=discrete_flow_shift,
-            loss_weighting_scheme=loss_weighting_scheme,
-            direction_loss=direction_loss,
-            teacher_guidance_scale=teacher_guidance_scale,
-            teacher_norm_reference=teacher_norm_reference,
-            min_step_index=None if min_step_index < 0 else min_step_index,
-            max_step_index=None if max_step_index < 0 else max_step_index,
-            eval_step_indices=parsed_eval_steps,
-            eta=eta,
-            seed=seed,
-            eval_seed=eval_seed,
-            vary_seed=vary_seed,
-            include_patterns=include_patterns,
-            exclude_patterns=exclude_patterns,
-            reg_dims=config.parse_yaml_mapping(network_reg_dims, int),
-            reg_lrs=config.parse_yaml_mapping(network_reg_lrs, float),
-            model_residency=model_residency,
-            lora_weight_dtype=lora_weight_dtype,
-            gradient_checkpointing=gradient_checkpointing,
-            skip_initial_eval=skip_initial_eval,
-            skip_final_eval=skip_final_eval,
-            optimizer_type=optimizer_type,
-            optimizer_eps=optimizer_eps,
-            optimizer_low_vram=optimizer_low_vram,
-        )
+                del vae
+                if optimizer_type == "qpola" and not output_lora_prefix.strip():
+                    raise ValueError("output_lora_prefix must not be empty for QPOLA training")
+                prompt_path = _resolve_prompt_path(prompt_yaml, custom_prompt_yaml_path)
+                prompts = prompt_util.load_prompts_from_yaml(prompt_path)
+                errors = prompt_util.validate_prompts(prompts, allow_unsafe_age_terms=allow_unsafe_age_terms)
+                if errors:
+                    raise ValueError("\n".join(errors))
 
-        from comfy.utils import ProgressBar  # type: ignore
+                with torch.inference_mode(False), torch.no_grad():
+                    records = conditioning.encode_prompt_conditions(clip, prompts)
+                train_indices = training.parse_indices(prompt_indices, 0)
+                eval_indices = training.parse_indices(eval_prompt_indices, train_indices[0]) if eval_prompt_indices.strip() else train_indices
+                parsed_eval_steps = training.parse_indices(eval_step_indices, 0) if eval_step_indices.strip() else None
+                resolved_width, resolved_height = prompt_util.resolve_training_resolution(prompts, train_indices + eval_indices, width, height)
+                include_patterns, exclude_patterns = config.preset_patterns(network_preset)
+                request = training.TrainRequest(
+                    prompt_indices=train_indices,
+                    eval_prompt_indices=eval_indices,
+                    steps=steps,
+                    lr=lr,
+                    rank=rank,
+                    alpha=alpha,
+                    width=resolved_width,
+                    height=resolved_height,
+                    num_inference_steps=num_inference_steps,
+                    scheduler_name="simple",
+                    timestep_sampling=timestep_sampling,
+                    sigmoid_scale=sigmoid_scale,
+                    discrete_flow_shift=discrete_flow_shift,
+                    loss_weighting_scheme=loss_weighting_scheme,
+                    direction_loss=direction_loss,
+                    teacher_guidance_scale=teacher_guidance_scale,
+                    teacher_norm_reference=teacher_norm_reference,
+                    min_step_index=None if min_step_index < 0 else min_step_index,
+                    max_step_index=None if max_step_index < 0 else max_step_index,
+                    eval_step_indices=parsed_eval_steps,
+                    eta=eta,
+                    seed=seed,
+                    eval_seed=eval_seed,
+                    vary_seed=vary_seed,
+                    include_patterns=include_patterns,
+                    exclude_patterns=exclude_patterns,
+                    reg_dims=config.parse_yaml_mapping(network_reg_dims, int),
+                    reg_lrs=config.parse_yaml_mapping(network_reg_lrs, float),
+                    model_residency=model_residency,
+                    lora_weight_dtype=lora_weight_dtype,
+                    gradient_checkpointing=gradient_checkpointing,
+                    skip_initial_eval=skip_initial_eval,
+                    skip_final_eval=skip_final_eval,
+                    optimizer_type=optimizer_type,
+                    optimizer_eps=optimizer_eps,
+                    optimizer_low_vram=optimizer_low_vram,
+                )
 
-        progress = ProgressBar(steps)
-        with torch.inference_mode(False):
-            lora_sd, report = training.train_lora_from_records(model, records, request, progress=progress)
-        report["prompt_yaml"] = str(prompt_path)
-        lora_path, report_path = _save_lora_and_report(lora_sd, report, output_lora_prefix)
-        report["output_lora"] = lora_path
-        report["output_report"] = report_path
-        return io.NodeOutput(lora_sd, json.dumps(report, indent=2), lora_path, report_path)
+                from comfy.utils import ProgressBar  # type: ignore
+
+                progress = ProgressBar(steps)
+                with torch.inference_mode(False):
+                    lora_sd, report = training.train_lora_from_records(model, records, request, progress=progress)
+                report["prompt_yaml"] = str(prompt_path)
+
+                with training_debug.debug_phase("save"):
+                    lora_path, report_path = _save_lora_and_report(lora_sd, report, output_lora_prefix)
+                    session.saved = True
+                    lora_size = os.path.getsize(lora_path) if os.path.exists(lora_path) else None
+                    report_size = os.path.getsize(report_path) if os.path.exists(report_path) else None
+                    training_debug.emit_event(
+                        "save_end",
+                        lora_path=os.path.basename(lora_path),
+                        lora_bytes=lora_size,
+                        report_path=os.path.basename(report_path),
+                        report_bytes=report_size,
+                        lora_keys=len(lora_sd),
+                    )
+
+                report["output_lora"] = lora_path
+                report["output_report"] = report_path
+
+                training_debug.emit_event(
+                    "run_end",
+                    status="success",
+                    success_steps=session.success_steps,
+                    backward_passed=session.backward_passed,
+                    optimizer_stepped=session.optimizer_stepped,
+                    restored=session.restored,
+                    saved=session.saved,
+                )
+                return io.NodeOutput(lora_sd, json.dumps(report, indent=2), lora_path, report_path)
+            except Exception as exc:
+                training_debug.emit_event(
+                    "run_error",
+                    phase=session.current_phase,
+                    error_type=type(exc).__name__,
+                    error_message=str(exc),
+                    traceback=traceback.format_exc(),
+                    memory=training_debug.get_memory_summary(sync=session.sync),
+                )
+                training_debug.emit_event(
+                    "run_end",
+                    status="failed",
+                    success_steps=session.success_steps,
+                    backward_passed=session.backward_passed,
+                    optimizer_stepped=session.optimizer_stepped,
+                    restored=session.restored,
+                    saved=session.saved,
+                )
+                raise
 
 
 class AnimaSliderTrainLoraQpolaNode(io.ComfyNode):
