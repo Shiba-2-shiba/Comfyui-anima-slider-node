@@ -19,13 +19,14 @@
 | T-CPU-05 | ローカルCPU | PASS | bd11da2 | 3.10 / 2.10.0 / fake / なし | debug=0 vs debug=1 / seed=42 | debugの有無で順伝播出力・loss値・LoRA勾配・更新後重みがビット単位で完全一致（非干渉確認） | `tests/test_training_debug.py::test_debug_non_interference_outputs_and_gradients` |
 | T-CPU-06 | ローカルCPU | PASS | bd11da2 | 3.10 / 2.10.0 / fake / なし | debug=0 / mock snapshot | debug=0 時に snapshot や不要なフック処理が実行されないことを確認 | `tests/test_training_debug.py::test_debug_off_does_not_call_snapshot_or_cuda_sync` |
 | T-CPU-07 | ローカルCPU | PASS | bd11da2 | 3.10 / 2.10.0 / fake / なし | exception simulation | phase内で発生した例外が `run_error` として記録され、元の例外型・メッセージ・tracebackが完全に保持されることを確認 | `tests/test_training_debug.py::test_run_error_and_traceback_preservation` |
-| A1 | クラウドGPU | NOT_RUN | 未定 | 3.14.5 / 2.13.0+cu130 / ck 0.2.33 / ComfyUI v0.35.0-33 | 40 blocks, 512x512, 1 step, prompt0, eval skip | クラウド確認A待ち | 利用者実行待ち |
-| A2 | クラウドGPU | NOT_RUN | 未定 | 3.14.5 / 2.13.0+cu130 / ck 0.2.33 / ComfyUI v0.35.0-33 | 512x512, 3 steps, checkpoint=True | クラウド確認A待ち | 利用者実行待ち |
-| A3 | クラウドGPU | NOT_RUN | 未定 | 3.14.5 / 2.13.0+cu130 / ck 0.2.33 / ComfyUI v0.35.0-33 | 1024x1024, 1 step, eval skip | クラウド確認A待ち | 利用者実行待ち |
+| A1/A2 | クラウドGPU | PASS | 8791877 | 3.12 / 2.13.0+cu130 / ck 0.2.33 / ComfyUI v0.35.0-33 | 40 blocks, 512x512, 3 steps, checkpoint=True, seed=676193269724873 | 全フェーズ(target, teacher, student)でrms_rope_split_half実通過、3 steps全560 LoRA有限勾配、checkpoint再計算成功、LoRA更新確認(sampled_changed=true)、バインディング8箇所復元、LoRA 280モジュール復元、safetensors(87.6MB)・report保存完了 | 利用者実行ログ (`起動ログ.txt`, `実行ログ.txt`) |
+| A3 | クラウドGPU | UNTESTED | 未定 | - | 1024x1024, 1 step | A1/A2合格によりゲート通過。1024x1024実機は未実施（未解決OOMリスクとして継続管理） | - |
+| T-CPU-B1 | ローカルCPU | PASS | refactor | 3.10 / 2.10.0 / fake / なし | 全8 RoPE演算、rot_dim部分回転、float64 gradcheck、API欠落、comfy.* alias、入れ子・部分進入失敗lifecycle、debug=0/1非干渉 | 8演算全てでbackward有限勾配、独立参照式一致(rtol=1e-5, atol=1e-6)、gradcheck通過、alias限定パッチ・復元確認。全135テスト・20サブテストPASS | `tests/test_autograd_compat.py`, `tests/test_training_util.py` |
+| B1/B2 | クラウドGPU | NOT_RUN | 未定 | 3.12 / 2.13.0+cu130 / ck 0.2.33 / ComfyUI v0.35.0-33 | 40 blocks, 512x512, 3 steps, checkpoint=True, seed=676193269724873 | クラウド確認B待ち | 利用者実行待ち |
 
 ## 3. 未確認事項（ローカルCPU環境では判定不可）
 
-- 実CUDA環境での `comfy_kitchen.rms_rope_split_half` カーネル実行と backward
+- 最終ブランチ (`refactor/anima-autograd-compat`) の実CUDA環境での動作（クラウド確認B待ち）
 - 1024x1024 における実VRAM消費量および OOM の有無
 - 28ブロック版 Anima での実機動作
 - QPOLA オプティマイザの実機動作

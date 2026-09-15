@@ -401,10 +401,15 @@ class TrainingUtilTests(unittest.TestCase):
             self.assertIn("blocks", summary["reason"])
 
     def test_autograd_rope1_preserves_gradient(self):
+        try:
+            from comfy_kitchen.backends.eager import rope as eager_rope
+        except Exception:
+            self.skipTest("comfy_kitchen eager backend is not available")
+
         x = torch.randn(1, 2, 3, 4, requires_grad=True)
         freqs = torch.randn(1, 1, 3, 2, 2, 2)
 
-        out = training._autograd_rope1(x, freqs)
+        out = eager_rope.apply_rope1(x, freqs)
         out.sum().backward()
 
         self.assertIsNotNone(x.grad)
@@ -416,11 +421,19 @@ class TrainingUtilTests(unittest.TestCase):
         except Exception:
             self.skipTest("comfy_kitchen is not installed")
 
-        original = comfy_kitchen.apply_rope1
+        original = getattr(comfy_kitchen, "apply_rope1", None)
+        if original is None:
+            self.skipTest("comfy_kitchen.apply_rope1 is not available")
 
         with training.autograd_safe_comfy_kitchen_rope(True) as summary:
             self.assertTrue(summary["patched"])
-            self.assertIs(comfy_kitchen.apply_rope1, training._autograd_rope1)
+            self.assertIsNot(comfy_kitchen.apply_rope1, original)
+            x = torch.randn(1, 2, 3, 4, requires_grad=True)
+            freqs = torch.randn(1, 1, 3, 2, 2, 2)
+            out = comfy_kitchen.apply_rope1(x, freqs)
+            out.sum().backward()
+            self.assertIsNotNone(x.grad)
+            self.assertEqual(out.shape, x.shape)
 
         self.assertIs(comfy_kitchen.apply_rope1, original)
 

@@ -13,7 +13,7 @@ import torch
 import torch.nn.functional as F
 from torch.utils.checkpoint import checkpoint
 
-from . import anima_forward, lora_network, slider_loss, training_debug
+from . import anima_forward, autograd_compat, lora_network, slider_loss, training_debug
 from .conditioning import AnimaPromptConds
 from .optimizer_factory import build_optimizer
 from .tensor_util import needs_normal_tensor
@@ -506,146 +506,9 @@ def gradient_checkpoint_diffusion_blocks(model: torch.nn.Module, enabled: bool):
             block.forward = original_forward
 
 
-def _autograd_rope1(x: torch.Tensor, freqs_cis: torch.Tensor) -> torch.Tensor:
-    x_ = x.to(dtype=freqs_cis.dtype).reshape(*x.shape[:-1], -1, 1, 2)
-    if x_.shape[2] != 1 and freqs_cis.shape[2] != 1 and x_.shape[2] != freqs_cis.shape[2]:
-        freqs_cis = freqs_cis[:, :, : x_.shape[2]]
-    x_out = freqs_cis[..., 0] * x_[..., 0] + freqs_cis[..., 1] * x_[..., 1]
-    return x_out.reshape(*x.shape).type_as(x)
-
-
-def _autograd_rope(xq: torch.Tensor, xk: torch.Tensor, freqs_cis: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
-    return _autograd_rope1(xq, freqs_cis), _autograd_rope1(xk, freqs_cis)
-
-
-def _reshape_rope_factor(factor: torch.Tensor, x: torch.Tensor) -> torch.Tensor:
-    factor = factor.to(device=x.device, dtype=x.dtype)
-    if factor.ndim == x.ndim:
-        return factor
-    if factor.ndim == x.ndim - 1 and x.ndim >= 3:
-        return factor.unsqueeze(-3)
-    while factor.ndim < x.ndim:
-        factor = factor.unsqueeze(0)
-    return factor
-
-
-def _autograd_rope_split_half1(x: torch.Tensor, cos: torch.Tensor, sin: torch.Tensor) -> torch.Tensor:
-    dtype = cos.dtype if cos.dtype in {torch.float16, torch.bfloat16, torch.float32, torch.float64} else x.dtype
-    x_work = x.to(dtype=dtype)
-    half = x_work.shape[-1] // 2
-    x1 = x_work[..., :half]
-    x2 = x_work[..., half:]
-    cos = _reshape_rope_factor(cos, x1)
-    sin = _reshape_rope_factor(sin, x1)
-    return torch.cat((x1 * cos - x2 * sin, x2 * cos + x1 * sin), dim=-1).type_as(x)
-
-
-def _autograd_rope_split_half(*args, **kwargs):
-    if kwargs:
-        if {"xq", "xk", "cos", "sin"} <= set(kwargs):
-            return (
-                _autograd_rope_split_half1(kwargs["xq"], kwargs["cos"], kwargs["sin"]),
-                _autograd_rope_split_half1(kwargs["xk"], kwargs["cos"], kwargs["sin"]),
-            )
-        if {"x", "cos", "sin"} <= set(kwargs):
-            return _autograd_rope_split_half1(kwargs["x"], kwargs["cos"], kwargs["sin"])
-        if {"xq", "xk", "freqs_cis"} <= set(kwargs):
-            return _autograd_rope(kwargs["xq"], kwargs["xk"], kwargs["freqs_cis"])
-        if {"x", "freqs_cis"} <= set(kwargs):
-            return _autograd_rope1(kwargs["x"], kwargs["freqs_cis"])
-
-    if len(args) == 2:
-        return _autograd_rope1(args[0], args[1])
-    if len(args) == 3:
-        if args[2].shape[-1] == 2:
-            return _autograd_rope(args[0], args[1], args[2])
-        return _autograd_rope_split_half1(args[0], args[1], args[2])
-    if len(args) == 4:
-        return _autograd_rope_split_half1(args[0], args[2], args[3]), _autograd_rope_split_half1(args[1], args[2], args[3])
-    raise TypeError(f"Unsupported comfy_kitchen RoPE arguments: args={len(args)} kwargs={sorted(kwargs)}")
-
-
-@contextmanager
 def autograd_safe_comfy_kitchen_rope(enabled: bool = True):
-    summary = {"requested": bool(enabled), "patched": False, "patched_ops": [], "reason": None}
-    if not enabled:
-        summary["reason"] = "disabled by request"
-        yield summary
-        return
+    return autograd_compat.differentiable_rope_context(enabled=enabled)
 
-    try:
-        import comfy_kitchen  # type: ignore
-    except Exception as exc:
-        summary["reason"] = f"comfy_kitchen unavailable: {type(exc).__name__}: {exc}"
-        yield summary
-        return
-
-    replacements = {
-        "apply_rope": _autograd_rope,
-        "apply_rope1": _autograd_rope1,
-        "apply_rope_split_half": _autograd_rope_split_half,
-    }
-    if hasattr(comfy_kitchen, "rms_rope_split_half"):
-        try:
-            from comfy_kitchen.backends.eager import rope as eager_rope  # type: ignore
-
-            eager_rms = getattr(eager_rope, "rms_rope_split_half", None)
-            if eager_rms is None:
-                ck_ver = getattr(comfy_kitchen, "__version__", "unknown")
-                raise RuntimeError(
-                    f"comfy_kitchen has rms_rope_split_half but comfy_kitchen.backends.eager.rope does not. version={ck_ver}"
-                )
-            replacements["rms_rope_split_half"] = eager_rms
-        except ImportError as exc:
-            ck_ver = getattr(comfy_kitchen, "__version__", "unknown")
-            raise RuntimeError(
-                f"Failed to import comfy_kitchen.backends.eager.rope for rms_rope_split_half: {exc} (version={ck_ver})"
-            ) from exc
-
-    wrapped_replacements = {
-        name: training_debug.wrap_rope(name, fn)
-        for name, fn in replacements.items()
-    }
-
-    patched = []
-    namespace = getattr(torch.ops, "comfy_kitchen", None)
-    for name, replacement in wrapped_replacements.items():
-        if hasattr(comfy_kitchen, name):
-            original = getattr(comfy_kitchen, name)
-            if original is not replacement:
-                patched.append((comfy_kitchen, name, original))
-                setattr(comfy_kitchen, name, replacement)
-                summary["patched_ops"].append(f"comfy_kitchen.{name}")
-        if namespace is not None and hasattr(namespace, name):
-            original = getattr(namespace, name)
-            if original is not replacement:
-                patched.append((namespace, name, original))
-                setattr(namespace, name, replacement)
-                summary["patched_ops"].append(f"torch.ops.comfy_kitchen.{name}")
-
-    summary["patched"] = bool(patched)
-    if not patched:
-        summary["reason"] = "no known comfy_kitchen RoPE ops found"
-
-    training_debug.emit_event(
-        "compat_enter",
-        target_ops=list(replacements.keys()),
-        patched_ops=summary["patched_ops"],
-        patched=summary["patched"],
-        reason=summary["reason"],
-    )
-
-    try:
-        yield summary
-    finally:
-        for target, name, original in reversed(patched):
-            setattr(target, name, original)
-        restored = all(getattr(t, n) is o for t, n, o in patched)
-        training_debug.emit_event(
-            "compat_exit",
-            restored=restored,
-            restored_count=len(patched),
-        )
 
 
 @torch.no_grad()

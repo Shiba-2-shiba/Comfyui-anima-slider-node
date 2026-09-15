@@ -10,6 +10,7 @@ from typing import Any
 import torch
 import torch.nn.functional as F
 
+from . import autograd_compat
 from .conditioning import AnimaCond, AnimaPromptConds
 from .tensor_util import needs_normal_tensor, normal_detached_cpu_tensor, normal_detached_tensor
 
@@ -17,8 +18,8 @@ from .tensor_util import needs_normal_tensor, normal_detached_cpu_tensor, normal
 LOGGER = logging.getLogger(__name__)
 TEXT_ADAPTER_EXTRA_KEYS = {"t5xxl_ids", "t5xxl_weights"}
 FLOATING_MODEL_DTYPES = {torch.float16, torch.bfloat16, torch.float32}
-ROPE_FUNCTION_NAMES = ("apply_rope", "apply_rope1", "apply_rope_split_half", "apply_rope_split_half1")
-_ROPE_PATCH_LOGGED = False
+ROPE_FUNCTION_NAMES = autograd_compat.SUPPORTED_ROPE_OPS
+
 
 
 def model_forward_dtype(model_patcher: Any) -> torch.dtype:
@@ -270,73 +271,9 @@ def _module_has_trainable_parameters(module: torch.nn.Module) -> bool:
     return any(parameter.requires_grad for parameter in module.parameters(recurse=False))
 
 
-def _module_name(module: Any) -> str:
-    return str(getattr(module, "__name__", ""))
-
-
-def _is_comfy_runtime_module(module: Any) -> bool:
-    return _module_name(module).startswith("comfy.")
-
-
-@contextmanager
 def differentiable_comfy_kitchen_rope_ops():
-    summary: dict[str, Any] = {
-        "available": False,
-        "patched_modules": [],
-        "patched_functions": 0,
-    }
-    try:
-        import comfy_kitchen  # type: ignore
-        from comfy_kitchen.backends.eager import rope as eager_rope  # type: ignore
-    except Exception as exc:
-        summary["error"] = f"{type(exc).__name__}: {exc}"
-        yield summary
-        return
+    return autograd_compat.differentiable_rope_context(enabled=True)
 
-    replacements = {
-        name: getattr(eager_rope, name)
-        for name in ROPE_FUNCTION_NAMES
-        if hasattr(comfy_kitchen, name) and hasattr(eager_rope, name)
-    }
-    originals = {name: getattr(comfy_kitchen, name) for name in replacements}
-    patched = []
-
-    def patch_attr(module: Any, name: str, replacement: Any):
-        current = getattr(module, name)
-        if current is replacement:
-            return
-        patched.append((module, name, current))
-        setattr(module, name, replacement)
-
-    for name, replacement in replacements.items():
-        patch_attr(comfy_kitchen, name, replacement)
-
-    for module in list(sys.modules.values()):
-        if module is None or module is comfy_kitchen or not _is_comfy_runtime_module(module):
-            continue
-        for name, original in originals.items():
-            if getattr(module, name, None) is original:
-                patch_attr(module, name, replacements[name])
-
-    patched_modules = sorted({_module_name(module) for module, _, _ in patched})
-    summary.update(
-        {
-            "available": bool(replacements),
-            "patched_modules": patched_modules,
-            "patched_functions": len(patched),
-        }
-    )
-
-    global _ROPE_PATCH_LOGGED
-    if patched and not _ROPE_PATCH_LOGGED:
-        LOGGER.info("Patched comfy_kitchen RoPE ops for differentiable Anima training: %s", summary)
-        _ROPE_PATCH_LOGGED = True
-
-    try:
-        yield summary
-    finally:
-        for module, name, original in reversed(patched):
-            setattr(module, name, original)
 
 
 @contextmanager
