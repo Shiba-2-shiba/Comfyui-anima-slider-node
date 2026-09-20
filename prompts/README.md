@@ -2,6 +2,40 @@
 
 This directory contains Anima Slider training prompt YAML files.
 
+## 年齢スライダー v5 / v6（片方向）
+
+- [v5: 老齢化](prompts-anima-age_slider_fullbody_v5.yaml): 成人女性を基準に、顔・首・手の加齢表現を増やします。猫背、こけた頬、細い腕、過度な痩身の指定を外し、両側で直立姿勢を指定しています。
+- [v6: 幼齢化](prompts-anima-age_slider_fullbody_v6.yaml): 同じ成人女性を基準に幼齢化します。幼い顔に加え、頭が体に対して大きくなる変化、低頭身、短い手足、小さな手を意図した変化として残しています。
+
+v4の8項目の衣装・画角バリエーションを引き継ぎ、学習用は全身4件＋上半身2件、評価用は全身2件です。足元を見やすくするため全身項目の裾は足首丈にし、靴を指定しました。髪型・背景・照明・表情・姿勢・衣装は各項目の全ロールで揃え、繰り返しの年齢語や背景保持の命令文を整理しています。これらの文章は背景・人物を固定する機能ではなく、副作用の低減は未検証です。
+
+両ファイルとも `target = unconditional = neutral` が成人の基準文、`positive` が目的年齢です。`unconditional` は空欄にせず、差し引く成人の参照として使います。**v5もv6もプラスのLoRA重みで目的方向へ適用**します。マイナス方向の動作は学習対象にしません。
+
+初期比較用のノード設定:
+
+| 設定 | 値 |
+| --- | --- |
+| `prompt_yaml` | v5またはv6のファイルを選択 |
+| `custom_prompt_yaml_path` | 空欄（設定済みなら選択したYAMLより優先されます） |
+| `direction_loss` | **`enhance_only`** |
+| `teacher_norm_reference` | `target` |
+| `eta` / `teacher_guidance_scale` | `1.0` / `1.0` |
+| YAMLの`guidance_scale` | `1.0`（各ファイルに設定済み） |
+| `width` / `height` | `0` / `0`（YAMLの896×1152を使用） |
+| `prompt_indices` | `0,1,2,3,4,5` |
+| `eval_prompt_indices` | `6,7` |
+| `skip_initial_eval` / `skip_final_eval` | 評価を行う場合は両方`False` |
+| `allow_unsafe_age_terms` | v5は`False`で可、v6は`True`が必要 |
+| `output_lora_prefix` | 例: `loras/anima_age_slider_v5` / `loras/anima_age_slider_v6` |
+
+YAMLは `direction_loss` や `eta` を切り替えません。保存済みワークフローからv4の設定を使う場合は上記をノード側で変更してください。この組み合わせの実効係数は `eta × guidance_scale × teacher_guidance_scale = 1.0` です。既存v4レポートの6.25より弱い初期候補であり、推奨値の品質検証はまだ行っていません。
+
+rank、alpha、steps、学習率などは初回は既存設定を引き継ぎ、学習元と生成先のチェックポイントを揃えて比較します。YAML以外にも片方向学習・係数・解像度を変更するため、v4との単一要因の比較ではありません。各変更の寄与を調べる場合は一要因ずつ比較してください。
+
+生成時はv5とv6を別々に、同じ全身プロンプト・同じシードで `0, 0.25, 0.5, 0.75, 1.0` から確認します。重みが同じ場合に加えて、同程度の年齢変化が得られた場合の背景・画風・衣装・髪型・姿勢を比較してください。v6では頭身と手足の比率の変化を目的の効果に含めます。学習時の数値評価だけでは画像品質や副作用は判定できません。
+
+追加YAMLを候補一覧に表示するにはComfyUIを再起動してください。`custom_prompt_yaml_path` に対象ファイルの絶対パスを指定して読み込むこともできます。
+
 ## 8プロンプト構成のYAML
 
 The 44 files below use:
