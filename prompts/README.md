@@ -2,6 +2,43 @@
 
 This directory contains Anima Slider training prompt YAML files.
 
+## 年齢スライダー v7 / v8（v5 / v6の追加評価に基づく候補）
+
+- [v7: 老齢化](prompts-anima-age_slider_fullbody_v7.yaml): v5のしわ列挙を整理し、目元の細い線・ほうれい線・顔のたるみ・首・手の加齢を残しました。全4ロールの表情を`neutral expression, relaxed brow`に揃えています。追加生成で笑顔寄りの結果も出たため、`relaxed closed mouth`は採用していません。直立姿勢・背景・衣装・画角はv5を引き継ぎます。
+- [v8: 幼齢化](prompts-anima-age_slider_fullbody_v8.yaml): v6の`positive`から`smooth skin`と`large clear eyes`を除き、`tiny nose, small mouth`、大きな頭・短い体・短い手足・小さな手は維持しました。全4ロールで2Dアニメ・セル塗り・控えめなハイライト・マットな肌の描画条件を揃え、既存衣装に合う襟・袖・裾・靴の仕様を具体化しました。衣装の種類を維持し、裾入れは適するトップスだけに指定しています。
+
+両方とも8項目で、0～3が全身学習、4～5が上半身学習、6～7が全身評価用です。各項目で`target = unconditional = neutral`が成人基準、`positive`だけが目的年齢です。v7とv8の成人基準は、表情・描画・衣装の変更方針が異なるため同一ではありません。**両方ともプラスのLoRA強度で目的方向へ適用**します。
+
+これらは生成時のポジティブ文ではなく、**Slider学習用YAML**です。作成済みv5/v6 LoRAへ自動反映されるものではなく、新たな学習が必要です。今回の追加生成は既存LoRAでの診断であり、v7/v8の再学習後の品質は未検証です。共通の文章指定は、背景・衣服・画風の固定を保証しません。特に+3は学習時の+1を超える適用であり、副作用の解消を保証できません。
+
+初回は、提供されたv5/v6の**実際の学習条件**に合わせて比較します。下の旧v5/v6節にある初期提案のeta=1.0・896×1152とは異なります。
+
+| ノード設定 | v7 / v8の初回比較値 |
+| --- | --- |
+| `prompt_yaml` | 対応するv7またはv8のYAML |
+| `custom_prompt_yaml_path` | 空欄。絶対パスで指定する場合は対応する新YAMLに更新（こちらが優先） |
+| `direction_loss` | **`enhance_only`** |
+| `teacher_norm_reference` | `target` |
+| `eta` / `teacher_guidance_scale` | **`1.5` / `1.0`** |
+| YAMLの`guidance_scale` | `1.0`（設定済み。実効係数は1.5） |
+| `width` / `height` | **`0` / `0` → YAMLの1024×1024**。ノード側で1024 / 1024の明示も可 |
+| `steps` / `rank` / `alpha` | `900` / `16` / `16` |
+| optimizer / 共通lr | AdamW / `1.5e-5` |
+| module別lr | self-attention `8e-6`、cross-attention `2.5e-5`、MLP `1.5e-6`（共通lrより優先） |
+| `num_inference_steps` / `scheduler_name` | `20` / `simple`（学習内の軌道計算） |
+| `timestep_sampling` / `discrete_flow_shift` | `shift` / `3.0` |
+| `loss_weighting_scheme` | `none` |
+| `prompt_indices` / `eval_prompt_indices` | `0,1,2,3,4,5` / `6,7` |
+| `skip_initial_eval` / `skip_final_eval` | **両方`False`** |
+| `allow_unsafe_age_terms` | v7は`False`で可、v8は`True`が必要 |
+| `output_lora_prefix` | `loras/anima_age_slider_v7` / `loras/anima_age_slider_v8` |
+
+YAMLは`eta`・`direction_loss`・学習率などのノード設定を変更しません。学習元チェックポイント名も記録してください。過去の提供レポートには学習元ファイル名がないため、生成先モデルと同じだったとは確認できていません。
+
+生成比較はv7対v5、v8対v6で、元の生成文と追加生成文、seed 1 / 10000、強度0～3（0.5刻み）を揃えます。v7は老齢感を維持してしわの過密・険しさが減るかを確認し、笑顔化だけで改善と判定しません。v8は低頭身・短い手足を残して光沢や服の仕様変更が減るかを確認します。同じ強度に加え、同程度の年齢変化で副作用を比較し、年齢効果が弱まっただけの結果と区別します。
+
+新YAMLを候補一覧に表示するにはComfyUIを再起動するか、`custom_prompt_yaml_path`に対象ファイルの絶対パスを指定してください。
+
 ## 年齢スライダー v5 / v6（片方向）
 
 - [v5: 老齢化](prompts-anima-age_slider_fullbody_v5.yaml): 成人女性を基準に、顔・首・手の加齢表現を増やします。猫背、こけた頬、細い腕、過度な痩身の指定を外し、両側で直立姿勢を指定しています。
