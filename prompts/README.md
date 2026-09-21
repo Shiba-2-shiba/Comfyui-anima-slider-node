@@ -2,6 +2,46 @@
 
 This directory contains Anima Slider training prompt YAML files.
 
+## 年齢スライダー v9 / v10（v7 / v8の生成評価に基づく候補）
+
+- [v9: 老齢化](prompts-anima-age_slider_fullbody_v9.yaml): v7の`positive`に`facial wrinkles`だけを追加しました。v7で弱まった老齢効果を回復するための比較候補です。`forehead wrinkles`・`crow's feet`の列挙は戻さず、`relaxed brow`、目元の細い線、ほうれい線、たるみ、首・手の加齢は維持しています。
+- [v10: 幼齢化](prompts-anima-age_slider_fullbody_v10.yaml): v8の全4ロールから`flat color fills, simple cel shading`だけを除きました。`2D anime illustration, restrained highlights, matte skin shading`は維持し、光沢を抑えつつ描画の過度な簡略化が減るかを確認します。幼齢顔、大きい頭・短い体・短い手足・小さな手、衣服仕様はv8のままです。
+
+提供された元の全身文・seed 1の比較では、v7は+1の老齢化が弱く、+3.5～+4では険しい表情や衣服・靴の変化が残りました。v8は+1～+1.5で幼齢比率と光沢低減が両立する一方、+2以降で白い縁取りや描画の簡略化が見られました。これらの原因を特定語に断定したものではなく、今回の2 YAMLも**再学習・生成品質は未検証**です。
+
+両方とも8項目、0～3が全身学習、4～5が上半身学習、6～7が全身評価用です。各項目の`target = unconditional = neutral`は成人基準で、`positive`だけが目的年齢です。**プラスのLoRA強度で目的方向に適用**します。YAMLは学習用の文章であり、既存LoRAへ自動反映されません。
+
+| ノード設定 | v9 / v10の比較値 |
+| --- | --- |
+| `prompt_yaml` | 対応するv9またはv10のYAML |
+| `custom_prompt_yaml_path` | 空欄、または対応する新YAMLの絶対パス（こちらが優先） |
+| `direction_loss` / `teacher_norm_reference` | **`enhance_only`** / `target` |
+| `eta` / `teacher_guidance_scale` | **`1.5` / `1.0`** |
+| YAMLの`guidance_scale` | `1.0`（実効係数1.5） |
+| `width` / `height` | **`0` / `0` → YAMLの1024×1024**。1024 / 1024の明示も可 |
+| `steps` / `rank` / `alpha` | `900` / `16` / `16` |
+| optimizer / 共通lr / weight decay | AdamW / `1.5e-5` / `0.01` |
+| module別lr | self-attention `8e-6`、cross-attention `2.5e-5`、MLP `1.5e-6`（共通lrより優先） |
+| `num_inference_steps` / `scheduler_name` | `20` / `simple`（学習内の軌道計算） |
+| `timestep_sampling` / `discrete_flow_shift` | `shift` / `3.0` |
+| `loss_weighting_scheme` | `none` |
+| `prompt_indices` / `eval_prompt_indices` | `0,1,2,3,4,5` / `6,7` |
+| `skip_initial_eval` / `skip_final_eval` | **両方`False`** |
+| `allow_unsafe_age_terms` | v9は`False`で可、**v10は`True`** |
+| `output_lora_prefix` | `loras/anima_age_slider_v9` / `loras/anima_age_slider_v10` |
+
+YAMLは`eta`・学習率・学習方式などを自動変更しません。今回は文章の変更範囲を絞るため、それ以外の設定を維持します。新たに対照も学習する場合は学習元チェックポイント、学習seed、eval_seedを揃え、モデル名・ハッシュも記録してください。過去の提供品とは学習乱数やモデルの完全一致を確認できていません。
+
+生成比較はv9対v7（老齢効果の基準としてv5も参照）、v10対v8で、同じ生成文・モデル・seed 1 / 10000を使います。強度0～3を0.5刻みで確認し、v9の老齢感が不足する場合は+3.5/+4も診断用に追加します。同じ強度だけでなく同程度の年齢変化で副作用を比較し、v9では険しさ・しわ・直立・衣服、v10では幼齢比率を保った光沢・白縁・描画情報量・衣服を確認します。既存の同条件画像は再利用できます。
+
+新YAMLを候補一覧に表示するにはComfyUIを再起動するか、`custom_prompt_yaml_path`で対象の絶対パスを指定してください。
+
+## 年齢スライダー v1～v4のarchive
+
+全身年齢スライダーの旧4ファイルは内容を変えずに[archive](archive/README.md)へ移しました。初版v1はバージョン接尾辞のない`prompts-anima-age_slider_fullbody.yaml`です。v5～v10はこのディレクトリにあります。
+
+archive内のYAMLは通常の候補一覧には表示されません。旧ワークフローを再現する場合は、`custom_prompt_yaml_path`に移動先YAMLの絶対パスを指定してください。旧保存値のファイル名・絶対パスは自動更新されません。
+
 ## 年齢スライダー v7 / v8（v5 / v6の追加評価に基づく候補）
 
 - [v7: 老齢化](prompts-anima-age_slider_fullbody_v7.yaml): v5のしわ列挙を整理し、目元の細い線・ほうれい線・顔のたるみ・首・手の加齢を残しました。全4ロールの表情を`neutral expression, relaxed brow`に揃えています。追加生成で笑顔寄りの結果も出たため、`relaxed closed mouth`は採用していません。直立姿勢・背景・衣装・画角はv5を引き継ぎます。
@@ -9,7 +49,7 @@ This directory contains Anima Slider training prompt YAML files.
 
 両方とも8項目で、0～3が全身学習、4～5が上半身学習、6～7が全身評価用です。各項目で`target = unconditional = neutral`が成人基準、`positive`だけが目的年齢です。v7とv8の成人基準は、表情・描画・衣装の変更方針が異なるため同一ではありません。**両方ともプラスのLoRA強度で目的方向へ適用**します。
 
-これらは生成時のポジティブ文ではなく、**Slider学習用YAML**です。作成済みv5/v6 LoRAへ自動反映されるものではなく、新たな学習が必要です。今回の追加生成は既存LoRAでの診断であり、v7/v8の再学習後の品質は未検証です。共通の文章指定は、背景・衣服・画風の固定を保証しません。特に+3は学習時の+1を超える適用であり、副作用の解消を保証できません。
+これらは生成時のポジティブ文ではなく、**Slider学習用YAML**です。作成済みv5/v6 LoRAへ自動反映されるものではなく、新たな学習が必要です。その後、提供されたv7/v8の学習結果と生成画像を評価しました。所見と次の比較候補は上のv9/v10節を参照してください。共通の文章指定は、背景・衣服・画風の固定を保証しません。特に+3は学習時の+1を超える適用であり、副作用の解消を保証できません。
 
 初回は、提供されたv5/v6の**実際の学習条件**に合わせて比較します。下の旧v5/v6節にある初期提案のeta=1.0・896×1152とは異なります。
 
@@ -159,5 +199,5 @@ The 44 files below use:
 
 These files are present in the same directory but are not part of the 8-prompt set. They are listed here for completeness:
 
-- `prompts-anima-age_slider_fullbody.yaml` — 3 prompts。期待される効果: 全身または上半身の構図で、幼い体型・顔立ちから高齢女性の顔立ち、手、姿勢、体格へ大きく年齢方向を変化させる。
+- [archive/prompts-anima-age_slider_fullbody.yaml](archive/prompts-anima-age_slider_fullbody.yaml) — 旧v1、3 prompts。全身または上半身の構図で、幼い体型・顔立ちから高齢女性の顔立ち、手、姿勢、体格へ大きく年齢方向を変化させる学習用文章。
 - `prompts-anima-age_slider_v2.yaml` — 24 prompts。期待される効果: 髪色、髪型、構図のバリエーションを多く持たせながら、成人女性の顔を若い成人印象から成熟した年齢感のある顔立ちへ寄せる。

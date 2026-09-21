@@ -44,7 +44,7 @@ class PromptUtilTests(unittest.TestCase):
             self.assertNotIn(term, lowered)
 
     def test_loads_bundled_prompt_yaml(self):
-        prompts = prompt_util.load_prompts_from_yaml(REPO_ROOT / "prompts" / "prompts-anima-age_slider_fullbody_v2.yaml")
+        prompts = prompt_util.load_prompts_from_yaml(REPO_ROOT / "prompts" / "archive" / "prompts-anima-age_slider_fullbody_v2.yaml")
 
         self.assertGreater(len(prompts), 0)
         self.assertEqual(prompts[0].action, "enhance")
@@ -86,7 +86,7 @@ class PromptUtilTests(unittest.TestCase):
             prompt_util.resolve_training_resolution(prompts, [0, 1], width=0, height=0)
 
     def test_age_fullbody_v3_keeps_body_framing_in_every_role(self):
-        prompts = prompt_util.load_prompts_from_yaml(REPO_ROOT / "prompts" / "prompts-anima-age_slider_fullbody_v3.yaml")
+        prompts = prompt_util.load_prompts_from_yaml(REPO_ROOT / "prompts" / "archive" / "prompts-anima-age_slider_fullbody_v3.yaml")
 
         for prompt in prompts:
             for text in (prompt.target, prompt.positive, prompt.unconditional, prompt.neutral):
@@ -95,7 +95,7 @@ class PromptUtilTests(unittest.TestCase):
                 self.assertIn("floor visible", text)
 
     def test_age_fullbody_v3_positive_avoids_horror_aging_terms(self):
-        prompts = prompt_util.load_prompts_from_yaml(REPO_ROOT / "prompts" / "prompts-anima-age_slider_fullbody_v3.yaml")
+        prompts = prompt_util.load_prompts_from_yaml(REPO_ROOT / "prompts" / "archive" / "prompts-anima-age_slider_fullbody_v3.yaml")
         rejected_terms = {
             "very elderly",
             "80 years old",
@@ -111,7 +111,7 @@ class PromptUtilTests(unittest.TestCase):
                 self.assertNotIn(term, positive)
 
     def test_age_fullbody_v4_preserves_bright_background_in_every_role(self):
-        prompts = prompt_util.load_prompts_from_yaml(REPO_ROOT / "prompts" / "prompts-anima-age_slider_fullbody_v4.yaml")
+        prompts = prompt_util.load_prompts_from_yaml(REPO_ROOT / "prompts" / "archive" / "prompts-anima-age_slider_fullbody_v4.yaml")
 
         for index, prompt in enumerate(prompts):
             for text in (prompt.target, prompt.positive, prompt.unconditional, prompt.neutral):
@@ -128,7 +128,7 @@ class PromptUtilTests(unittest.TestCase):
                 self.assertIn("neutral colors", text)
 
     def test_age_fullbody_v4_uses_intentionally_strong_age_terms(self):
-        prompts = prompt_util.load_prompts_from_yaml(REPO_ROOT / "prompts" / "prompts-anima-age_slider_fullbody_v4.yaml")
+        prompts = prompt_util.load_prompts_from_yaml(REPO_ROOT / "prompts" / "archive" / "prompts-anima-age_slider_fullbody_v4.yaml")
 
         errors = prompt_util.validate_prompts(prompts)
 
@@ -150,7 +150,7 @@ class PromptUtilTests(unittest.TestCase):
             self.assertNotIn("chibi", unconditional)
 
     def test_age_fullbody_v4_avoids_color_axis_terms(self):
-        prompts = prompt_util.load_prompts_from_yaml(REPO_ROOT / "prompts" / "prompts-anima-age_slider_fullbody_v4.yaml")
+        prompts = prompt_util.load_prompts_from_yaml(REPO_ROOT / "prompts" / "archive" / "prompts-anima-age_slider_fullbody_v4.yaml")
         rejected_terms = {"pink hair", "red hair", "blonde hair", "silver hair", "gray hair", "white hair"}
 
         for prompt in prompts:

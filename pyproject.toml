@@ -24,6 +24,6 @@ comfyui_anima_slider_node = "."
 "comfyui_anima_slider_node.anima_slider_node.third_party.qpola" = "anima_slider_node/third_party/qpola"
 
 [tool.setuptools.package-data]
-comfyui_anima_slider_node = ["README.md", "QPOLA_NODE_SPEC.md", "prompts/*.yaml"]
+comfyui_anima_slider_node = ["README.md", "QPOLA_NODE_SPEC.md", "prompts/*.yaml", "prompts/README.md", "prompts/archive/*.yaml", "prompts/archive/README.md"]
 "comfyui_anima_slider_node.anima_slider_node.third_party.qpola" = ["LICENSE", "NOTICE.md", "*.cu", "*.ptx"]
 
