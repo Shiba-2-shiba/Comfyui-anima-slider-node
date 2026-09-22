@@ -1,0 +1,431 @@
+{
+  "id": "f7a250a1-53fb-496b-8c39-c60d9e764028",
+  "revision": 0,
+  "last_node_id": 61,
+  "last_link_id": 104,
+  "nodes": [
+    {
+      "id": 48,
+      "type": "MarkdownNote",
+      "pos": [
+        -2268.9108601440116,
+        -225.21389211332593
+      ],
+      "size": [
+        660,
+        929.171875
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "7.5.2",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "# Anima 2.9B Slider LoRA training\n\nユーザー提供の正式採用パラメーター。学習・保存用ワークフローです（画像プレビュー生成は含みません）。\n\n- 正規の老齢化YAMLを選択済み。幼齢化は prompts-anima-deaging_slider_fullbody.yaml を選択。\n- enhance_only / 900 steps / rank 16 / alpha 16 / eta 1.5 / 1024x1024。\n- 学習パラメーターとモデル・CLIP・VAE選択は提供原本を保持しています。自分の環境にある対応モデルを選択してください。\n- YAMLはノードの学習方式やetaを自動変更しません。既存の胸部サイズ・衣服フィットYAMLはguidance_scale=2.0なので実効係数3.0、年齢正規版は1.0なので1.5です。\n- seedのcontrol_after_generateは原本どおりrandomize。比較実験ではfixedに変更して実行seedを記録してください。\n- output_lora_prefixは原本どおり loras/anima_age_slider。別概念・別実験では識別できる名前へ変更してください。\n\n原本: workflows/archive/image_anima_preview_anima_2_9b_original.json\n設定一覧・移行内容: workflows/README.md\n"
+      ],
+      "widgets_values_named": {
+        "text": "## About Anima\n\n[Anima](https://huggingface.co/circlestone-labs/Anima) (2B-parameter, CircleStone/Comfy Org): Anime/non-photorealistic text-to-image model (no realism). Preview version trained on anime; final version to improve details.\n\nLimitations: poor realism (intentional), weak high-res/text, plain style.\n\n## Model Links (for Local Users)\n\n**text_encoders**\n\n- [qwen_3_06b_base.safetensors](https://huggingface.co/circlestone-labs/Anima/resolve/main/split_files/text_encoders/qwen_3_06b_base.safetensors)\n\n**vae**\n\n- [qwen_image_vae.safetensors](https://huggingface.co/circlestone-labs/Anima/resolve/main/split_files/vae/qwen_image_vae.safetensors)\n\n**diffusion_models**\n\n- [anima-preview2.safetensors](https://huggingface.co/circlestone-labs/Anima/resolve/main/split_files/diffusion_models/anima-preview2.safetensors)\n\n\n## Model Storage Location\n\n```\n📂 ComfyUI/\n├── 📂 models/\n│   ├── 📂 text_encoders/\n│   │   └── qwen_3_06b_base.safetensors\n│   ├── 📂 vae/\n│   │   └── qwen_image_vae.safetensors\n│   └── 📂 diffusion_models/\n│       └── anima-preview2.safetensors\n```\n\n## Report Issue\n\nNote: Please update ComfyUI first ([guide](https://docs.comfy.org/installation/update_comfyui)) and prepare required models. Desktop/Cloud will be updated after the stable release; nightly-supported models may not be included yet, please wait for the next stable release.\n\n- Cannot run / runtime errors: [ComfyUI/issues](https://github.com/Comfy-Org/ComfyUI/issues)\n- UI / frontend issues: [ComfyUI_frontend/issues](https://github.com/Comfy-Org/ComfyUI_frontend/issues)\n- Workflow issues: [workflow_templates/issues](https://github.com/Comfy-Org/workflow_templates/issues)\n"
+      },
+      "color": "#222",
+      "bgcolor": "#000"
+    },
+    {
+      "id": 15,
+      "type": "VAELoader",
+      "pos": [
+        -1554.2839534788259,
+        -566.1565299383919
+      ],
+      "size": [
+        307.578125,
+        88.875
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            100
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "VAELoader",
+        "enableTabs": false,
+        "tabWidth": 65,
+        "tabXOffset": 10,
+        "hasSecondTab": false,
+        "secondTabText": "Send Back",
+        "secondTabOffset": 80,
+        "secondTabWidth": 65,
+        "cnr_id": "comfy-core",
+        "ver": "0.3.40",
+        "models": [
+          {
+            "name": "qwen_image_vae.safetensors",
+            "url": "https://huggingface.co/circlestone-labs/Anima/resolve/main/split_files/vae/qwen_image_vae.safetensors",
+            "directory": "vae"
+          }
+        ],
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "7.5.2",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "qwen_image_vae.safetensors"
+      ],
+      "widgets_values_named": {
+        "vae_name": "qwen_image_vae.safetensors"
+      }
+    },
+    {
+      "id": 45,
+      "type": "CLIPLoader",
+      "pos": [
+        -1535.6602993187457,
+        -427.05632089938564
+      ],
+      "size": [
+        307.578125,
+        146.640625
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "CLIP",
+          "type": "CLIP",
+          "links": [
+            101
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "CLIPLoader",
+        "enableTabs": false,
+        "tabWidth": 65,
+        "tabXOffset": 10,
+        "hasSecondTab": false,
+        "secondTabText": "Send Back",
+        "secondTabOffset": 80,
+        "secondTabWidth": 65,
+        "cnr_id": "comfy-core",
+        "ver": "0.11.0",
+        "models": [
+          {
+            "name": "qwen_3_06b_base.safetensors",
+            "url": "https://huggingface.co/circlestone-labs/Anima/resolve/main/split_files/text_encoders/qwen_3_06b_base.safetensors",
+            "directory": "text_encoders"
+          }
+        ],
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "7.5.2",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "qwen_3_06b_base.safetensors",
+        "stable_diffusion",
+        "default"
+      ],
+      "widgets_values_named": {
+        "clip_name": "qwen_3_06b_base.safetensors",
+        "type": "stable_diffusion",
+        "device": "default"
+      }
+    },
+    {
+      "id": 44,
+      "type": "UNETLoader",
+      "pos": [
+        -1476.654464726938,
+        -764.5914144118291
+      ],
+      "size": [
+        307.578125,
+        117.75
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            99
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "UNETLoader",
+        "enableTabs": false,
+        "tabWidth": 65,
+        "tabXOffset": 10,
+        "hasSecondTab": false,
+        "secondTabText": "Send Back",
+        "secondTabOffset": 80,
+        "secondTabWidth": 65,
+        "cnr_id": "comfy-core",
+        "ver": "0.11.0",
+        "models": [
+          {
+            "name": "anima-preview2.safetensors",
+            "url": "https://huggingface.co/circlestone-labs/Anima/resolve/main/split_files/diffusion_models/anima-preview2.safetensors",
+            "directory": "diffusion_models"
+          }
+        ],
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "7.5.2",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "miaomiaoHarem_29BBETA10.safetensors",
+        "default"
+      ],
+      "widgets_values_named": {
+        "unet_name": "miaomiaoHarem_29BBETA10.safetensors",
+        "weight_dtype": "default"
+      }
+    },
+    {
+      "id": 61,
+      "type": "ComfyuiAnimaSliderTrainLora",
+      "pos": [
+        -1095.8088393076105,
+        -774.531315305434
+      ],
+      "size": [
+        400,
+        1018
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 99
+        },
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 101
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": 100
+        }
+      ],
+      "outputs": [
+        {
+          "name": "lora",
+          "type": "LORA_MODEL",
+          "links": null
+        },
+        {
+          "name": "report_json",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "lora_path",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "report_path",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "ComfyuiAnimaSliderTrainLora",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "prompts-anima-aging_slider_fullbody.yaml",
+        "",
+        "0,1,2,3,4,5",
+        "6,7",
+        900,
+        1.5e-05,
+        16,
+        16,
+        "attn_mlp",
+        "",
+        ".*self_attn.*: 8e-6\n.*cross_attn.*: 2.5e-5\n.*mlp.*: 1.5e-6",
+        "prefer_cuda",
+        "fp32",
+        true,
+        false,
+        false,
+        1024,
+        1024,
+        20,
+        "shift",
+        1,
+        3,
+        "none",
+        "enhance_only",
+        1,
+        "target",
+        -1,
+        -1,
+        "",
+        1.5,
+        583650396415791,
+        "randomize",
+        961218314523996,
+        true,
+        true,
+        "loras/anima_age_slider"
+      ],
+      "widgets_values_named": {
+        "prompt_yaml": "prompts-anima-age_slider_fullbody_v5.yaml",
+        "custom_prompt_yaml_path": "",
+        "prompt_indices": "0,1,2,3,4,5",
+        "eval_prompt_indices": "6,7",
+        "steps": 900,
+        "lr": 1.5e-05,
+        "rank": 16,
+        "alpha": 16,
+        "network_preset": "attn_mlp",
+        "network_reg_dims": "",
+        "network_reg_lrs": ".*self_attn.*: 8e-6\n.*cross_attn.*: 2.5e-5\n.*mlp.*: 1.5e-6",
+        "model_residency": "prefer_cuda",
+        "lora_weight_dtype": "fp32",
+        "gradient_checkpointing": true,
+        "skip_initial_eval": false,
+        "skip_final_eval": false,
+        "width": 1024,
+        "height": 1024,
+        "num_inference_steps": 20,
+        "timestep_sampling": "shift",
+        "sigmoid_scale": 1,
+        "discrete_flow_shift": 3,
+        "loss_weighting_scheme": "none",
+        "direction_loss": "enhance_only",
+        "teacher_guidance_scale": 1,
+        "teacher_norm_reference": "target",
+        "min_step_index": -1,
+        "max_step_index": -1,
+        "eval_step_indices": "",
+        "eta": 1.5,
+        "seed": 583650396415791,
+        "control_after_generate": "randomize",
+        "eval_seed": 961218314523996,
+        "vary_seed": true,
+        "allow_unsafe_age_terms": true,
+        "output_lora_prefix": "loras/anima_age_slider"
+      }
+    }
+  ],
+  "links": [
+    [
+      99,
+      44,
+      0,
+      61,
+      0,
+      "MODEL"
+    ],
+    [
+      100,
+      15,
+      0,
+      61,
+      2,
+      "VAE"
+    ],
+    [
+      101,
+      45,
+      0,
+      61,
+      1,
+      "CLIP"
+    ]
+  ],
+  "groups": [
+    {
+      "id": 1,
+      "title": "Step 1 - Load Models",
+      "bounding": [
+        -76.66666666666667,
+        81.66666666666667,
+        350,
+        525
+      ],
+      "color": "#3f789e",
+      "flags": {}
+    },
+    {
+      "id": 2,
+      "title": "Step 2 - Image Size(1MP))",
+      "bounding": [
+        -76.66666666666667,
+        631.6666666666667,
+        350,
+        241.66666666666669
+      ],
+      "color": "#3f789e",
+      "flags": {}
+    },
+    {
+      "id": 3,
+      "title": "Step3 - Prompt",
+      "bounding": [
+        298.33333333333337,
+        81.66666666666667,
+        525,
+        791.6666666666667
+      ],
+      "color": "#3f789e",
+      "flags": {}
+    }
+  ],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 1.062362053927225,
+      "offset": [
+        1894.8853624240865,
+        895.5992807630469
+      ]
+    },
+    "frontendVersion": "1.53.6",
+    "workflowRendererVersion": "Vue-corrected",
+    "VHS_latentpreview": false,
+    "VHS_latentpreviewrate": 0,
+    "VHS_MetadataImage": true,
+    "VHS_KeepIntermediate": true,
+    "ue_links": [],
+    "links_added_by_ue": []
+  },
+  "version": 0.4
+}

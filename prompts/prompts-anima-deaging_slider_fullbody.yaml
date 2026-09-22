@@ -1,4 +1,5 @@
-# v10: adult-to-child; remove flat color fills / simple cel shading from v8.
+# Canonical deaging slider: adult-to-child; adopted from v10 without prompt changes.
+# v10 removed flat color fills / simple cel shading from v8.
 # Keep 2D anime, restrained highlights and matte skin shading in every role.
 # Preserve all v8 age/body-proportion cues and clothing specifications.
 # Use positive LoRA weights; required node setting: direction_loss=enhance_only.
@@ -6,7 +7,7 @@
 # Node width=0, height=0 selects the YAML resolution: 1024x1024.
 # Train indices: 0,1,2,3,4,5; held-out evaluation indices: 6,7.
 # target == unconditional == neutral: the adult baseline is the subtracted reference.
-# New training candidate; image quality and strong-weight behavior are unverified.
+# Evaluated on one full-body prompt/seed; white outlines and clothing drift remain.
 # See README.md for settings and evaluation notes.
 
 # 1: training, full body, front view.

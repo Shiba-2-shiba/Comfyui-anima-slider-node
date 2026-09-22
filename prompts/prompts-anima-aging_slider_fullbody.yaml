@@ -1,4 +1,5 @@
-# v9: adult-to-elderly; restore facial wrinkles to the v7 positive age cue.
+# Canonical aging slider: adult-to-elderly; adopted from v9 without prompt changes.
+# v9 restored facial wrinkles to the v7 positive age cue.
 # Keep v7 relaxed brow, fine eye lines, folds, sagging skin, aged neck and hands.
 # Do not reintroduce the v5 forehead-wrinkle / crow's-feet enumeration.
 # Use positive LoRA weights; required node setting: direction_loss=enhance_only.
@@ -6,7 +7,7 @@
 # Node width=0, height=0 selects the YAML resolution: 1024x1024.
 # Train indices: 0,1,2,3,4,5; held-out evaluation indices: 6,7.
 # target == unconditional == neutral: the adult baseline is the subtracted reference.
-# New training candidate; image quality and strong-weight behavior are unverified.
+# Evaluated on one full-body prompt/seed; dense wrinkles and clothing drift remain.
 # See README.md for settings and evaluation notes.
 
 # 1: training, full body, front view.

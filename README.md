@@ -13,6 +13,8 @@ git clone https://github.com/Shiba-2-shiba/Comfyui-anima-slider-node Comfyui-ani
 
 ComfyUI を再起動すると、`training/anima slider` に `Train Anima Slider LoRA` が追加されます。
 
+Anima 2.9B用の[正式採用学習ワークフロー](workflows/anima_2_9b_slider_training.json)と[設定一覧・提供原本](workflows/README.md)を同梱しています。
+
 ## ノードの入出力
 
 入力:
@@ -87,6 +89,8 @@ QPOLAを初期化または実行できない場合、ノードはエラーで停
 `skip_initial_eval` と `skip_final_eval` はOOM phaseを分けるための診断用です。品質評価の代替ではありません。report JSONには `gradient_checkpointing`, eval skip設定、setup後とtext adapter precompute後のCUDA memory diagnostics、各stepのphase timingsが記録されます。
 
 ## Prompt YAML
+
+全身年齢スライダーの正規版は[老齢化（旧v9）](prompts/prompts-anima-aging_slider_fullbody.yaml)と[幼齢化（旧v10）](prompts/prompts-anima-deaging_slider_fullbody.yaml)です。両方とも`enhance_only`で学習し、プラスのLoRA強度を使います。[設定・旧版からの移行](prompts/README.md)と、他のスライダーへ適用する[単方向化・プロンプト調整の調査手順](prompts/doc/slider-direction-investigation.md)を参照してください。
 
 YAML は list 形式です。
 

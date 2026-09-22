@@ -2,6 +2,14 @@
 
 このディレクトリの prompt YAML は、Anima/Cosmos RFlow 向け Slider LoRA の学習方向を定義する。各 prompt は `target` を基準に、`positive` と `unconditional` の差分だけが目的の slider 概念になるように作る。
 
+## 単方向化による改善の調査
+
+[胸部サイズ・衣服フィットの具体的な検討](breast-size-clothing-fit-investigation.md)では、両概念の混ざり方と方向別の基準文、最小比較案を扱う。学習設定の出発点は[Anima 2.9B正式採用ワークフロー](../../workflows/README.md)を参照する。
+
+年齢スライダーでは、両方向学習から方向別の単方向学習へ切り替え、さらに文章を調整して改善した。老齢化（旧v9）・幼齢化（旧v10）を[正規版](../README.md)として採用している。他のスライダーでの再現可能性は[調査手順](slider-direction-investigation.md)に従い、学習方式だけの変更、基準文の変更、その後の文章調整を分けて確認する。
+
+単方向の構成では`target = unconditional = neutral`を目的に合った基準とし、`positive`を目的側にする。この基準は属性を完全に省いた文とは限らない（年齢なら成人基準）。幼齢化の頭身や姿勢スライダーの姿勢など、意図した変化を共通文で固定しない。以下の一般的な対向属性の指針と区別する。
+
 ## Refactor tracking
 
 - `prompt-refactor-spec.md` — prompt refactor rules and acceptance criteria.
