@@ -2,6 +2,8 @@
 
 更新日: 2026-09-22
 
+**2026-09-23追記:** 胸部増大v2のLora8と衣服ゆったりv3のLora9について、提供画像17枚と学習レポートを評価し、胸部増大v4を追加した。[最新評価・v4の変更・次の検証](lora8-lora9-breast-v4-evaluation.md)を参照。以下の「未評価」は2026-09-22時点の記録であり、v4自体の学習・生成は未実施。
+
 **作成済みの学習例:** 本書のC案に基づき、[胸部増加v2](../prompts-anima-breast_size_slider_v2.yaml)、[胸部減少v3](../prompts-anima-breast_size_slider_v3.yaml)、[衣服密着v2](../prompts-anima-clothing_fit_slider_v2.yaml)、[衣服ゆったりv3](../prompts-anima-clothing_fit_slider_v3.yaml)を追加した。各8項目で、元の目的4句・共通条件・YAML数値を維持。v2/v3は別方向の候補であり、元YAMLの置き換えやD案の句削減ではない。使用設定は[親README](../README.md)を参照。学習・生成評価はまだ行っていない。
 
 対象は[breast_size](../prompts-anima-breast_size_slider.yaml)と[clothing_fit](../prompts-anima-clothing_fit_slider.yaml)。両方とも方向別の単方向学習を試す価値がある。特に、胸部サイズと衣服の密着度が同時に動く可能性を分離して調べたい。ただし、今回確認したのは各8項目の文章と設定であり、この2種類の学習結果・生成画像の評価ではない。以下の問題は仮説、文章は試験案であり、現行YAMLの正式な置き換えではない。

@@ -1,0 +1,99 @@
+# v4: moderate-to-larger covered bust; simplified size-only contrast from v2.
+# target/unconditional/neutral, contexts and numeric settings are identical to v2.
+# Only positive destination text changes: four cues -> larger bust volume under clothing.
+# v3 remains the independent moderate-to-smaller candidate; v4 does not replace it.
+# Required node setting: direction_loss=enhance_only; apply positive LoRA weights.
+# Train indices: 0,1,2,3,4,5; held-out evaluation indices: 6,7.
+# guidance_scale=2.0; eta=1.5 and teacher_guidance_scale=1.0 give effective_eta=3.0.
+# The Anima 2.9B workflow explicitly uses 1024x1024, overriding YAML 896x1152.
+# New training candidate: reduction of waist/thigh/hair drift is NOT yet verified.
+# Waist-up training is retained for a controlled contrast; evaluate on full-body images.
+# See doc/lora8-lora9-breast-v4-evaluation.md for evidence, limitations and next tests.
+
+# 0: training.
+- target: "masterpiece, best quality, score_9, score_8, safe, 1girl, adult woman, fully clothed, nonsexual, solo, upper body, waist-up portrait, front view, dark brown hair, medium hair, hair away from face, opaque modest top, simple dark knit top, neutral colors, covered torso visible, clean bright neutral studio, pale wall, no dark background, same background, background unchanged, pose unchanged, looking at viewer, neutral expression, moderate bust volume under clothing"
+  positive: "masterpiece, best quality, score_9, score_8, safe, 1girl, adult woman, fully clothed, nonsexual, solo, upper body, waist-up portrait, front view, dark brown hair, medium hair, hair away from face, opaque modest top, simple dark knit top, neutral colors, covered torso visible, clean bright neutral studio, pale wall, no dark background, same background, background unchanged, pose unchanged, looking at viewer, neutral expression, larger bust volume under clothing"
+  unconditional: "masterpiece, best quality, score_9, score_8, safe, 1girl, adult woman, fully clothed, nonsexual, solo, upper body, waist-up portrait, front view, dark brown hair, medium hair, hair away from face, opaque modest top, simple dark knit top, neutral colors, covered torso visible, clean bright neutral studio, pale wall, no dark background, same background, background unchanged, pose unchanged, looking at viewer, neutral expression, moderate bust volume under clothing"
+  neutral: "masterpiece, best quality, score_9, score_8, safe, 1girl, adult woman, fully clothed, nonsexual, solo, upper body, waist-up portrait, front view, dark brown hair, medium hair, hair away from face, opaque modest top, simple dark knit top, neutral colors, covered torso visible, clean bright neutral studio, pale wall, no dark background, same background, background unchanged, pose unchanged, looking at viewer, neutral expression, moderate bust volume under clothing"
+  guidance_scale: 2.0
+  action: "enhance"
+  width: 896
+  height: 1152
+  batch_size: 1
+
+# 1: training.
+- target: "masterpiece, best quality, score_9, score_8, safe, 1girl, adult woman, fully clothed, nonsexual, solo, upper body, waist-up portrait, three-quarter view, dark brown hair, long hair, hair away from face, opaque modest top, simple dark cardigan over top, neutral colors, covered torso visible, clean bright neutral studio, pale wall, no dark background, same background, background unchanged, pose unchanged, looking at viewer, neutral expression, moderate bust volume under clothing"
+  positive: "masterpiece, best quality, score_9, score_8, safe, 1girl, adult woman, fully clothed, nonsexual, solo, upper body, waist-up portrait, three-quarter view, dark brown hair, long hair, hair away from face, opaque modest top, simple dark cardigan over top, neutral colors, covered torso visible, clean bright neutral studio, pale wall, no dark background, same background, background unchanged, pose unchanged, looking at viewer, neutral expression, larger bust volume under clothing"
+  unconditional: "masterpiece, best quality, score_9, score_8, safe, 1girl, adult woman, fully clothed, nonsexual, solo, upper body, waist-up portrait, three-quarter view, dark brown hair, long hair, hair away from face, opaque modest top, simple dark cardigan over top, neutral colors, covered torso visible, clean bright neutral studio, pale wall, no dark background, same background, background unchanged, pose unchanged, looking at viewer, neutral expression, moderate bust volume under clothing"
+  neutral: "masterpiece, best quality, score_9, score_8, safe, 1girl, adult woman, fully clothed, nonsexual, solo, upper body, waist-up portrait, three-quarter view, dark brown hair, long hair, hair away from face, opaque modest top, simple dark cardigan over top, neutral colors, covered torso visible, clean bright neutral studio, pale wall, no dark background, same background, background unchanged, pose unchanged, looking at viewer, neutral expression, moderate bust volume under clothing"
+  guidance_scale: 2.0
+  action: "enhance"
+  width: 896
+  height: 1152
+  batch_size: 1
+
+# 2: training.
+- target: "masterpiece, best quality, score_9, score_8, safe, 1girl, adult woman, fully clothed, nonsexual, solo, upper body, waist-up portrait, front view, dark brown hair, short hair, hair tucked behind ears, opaque modest top, simple dark sweater, neutral colors, covered torso visible, clean bright neutral studio, pale wall, no dark background, same background, background unchanged, pose unchanged, looking at viewer, neutral expression, moderate bust volume under clothing"
+  positive: "masterpiece, best quality, score_9, score_8, safe, 1girl, adult woman, fully clothed, nonsexual, solo, upper body, waist-up portrait, front view, dark brown hair, short hair, hair tucked behind ears, opaque modest top, simple dark sweater, neutral colors, covered torso visible, clean bright neutral studio, pale wall, no dark background, same background, background unchanged, pose unchanged, looking at viewer, neutral expression, larger bust volume under clothing"
+  unconditional: "masterpiece, best quality, score_9, score_8, safe, 1girl, adult woman, fully clothed, nonsexual, solo, upper body, waist-up portrait, front view, dark brown hair, short hair, hair tucked behind ears, opaque modest top, simple dark sweater, neutral colors, covered torso visible, clean bright neutral studio, pale wall, no dark background, same background, background unchanged, pose unchanged, looking at viewer, neutral expression, moderate bust volume under clothing"
+  neutral: "masterpiece, best quality, score_9, score_8, safe, 1girl, adult woman, fully clothed, nonsexual, solo, upper body, waist-up portrait, front view, dark brown hair, short hair, hair tucked behind ears, opaque modest top, simple dark sweater, neutral colors, covered torso visible, clean bright neutral studio, pale wall, no dark background, same background, background unchanged, pose unchanged, looking at viewer, neutral expression, moderate bust volume under clothing"
+  guidance_scale: 2.0
+  action: "enhance"
+  width: 896
+  height: 1152
+  batch_size: 1
+
+# 3: training.
+- target: "masterpiece, best quality, score_9, score_8, safe, 1girl, adult woman, fully clothed, nonsexual, solo, upper body, waist-up portrait, three-quarter view, dark brown hair, medium hair, hair away from face, opaque modest top, simple dark jacket over shirt, neutral colors, covered torso visible, clean bright neutral studio, pale wall, no dark background, same background, background unchanged, pose unchanged, looking at viewer, neutral expression, moderate bust volume under clothing"
+  positive: "masterpiece, best quality, score_9, score_8, safe, 1girl, adult woman, fully clothed, nonsexual, solo, upper body, waist-up portrait, three-quarter view, dark brown hair, medium hair, hair away from face, opaque modest top, simple dark jacket over shirt, neutral colors, covered torso visible, clean bright neutral studio, pale wall, no dark background, same background, background unchanged, pose unchanged, looking at viewer, neutral expression, larger bust volume under clothing"
+  unconditional: "masterpiece, best quality, score_9, score_8, safe, 1girl, adult woman, fully clothed, nonsexual, solo, upper body, waist-up portrait, three-quarter view, dark brown hair, medium hair, hair away from face, opaque modest top, simple dark jacket over shirt, neutral colors, covered torso visible, clean bright neutral studio, pale wall, no dark background, same background, background unchanged, pose unchanged, looking at viewer, neutral expression, moderate bust volume under clothing"
+  neutral: "masterpiece, best quality, score_9, score_8, safe, 1girl, adult woman, fully clothed, nonsexual, solo, upper body, waist-up portrait, three-quarter view, dark brown hair, medium hair, hair away from face, opaque modest top, simple dark jacket over shirt, neutral colors, covered torso visible, clean bright neutral studio, pale wall, no dark background, same background, background unchanged, pose unchanged, looking at viewer, neutral expression, moderate bust volume under clothing"
+  guidance_scale: 2.0
+  action: "enhance"
+  width: 896
+  height: 1152
+  batch_size: 1
+
+# 4: training.
+- target: "masterpiece, best quality, score_9, score_8, safe, 1girl, adult woman, fully clothed, nonsexual, solo, upper body, waist-up portrait, front view, dark brown hair, long hair, hair away from face, opaque modest top, simple dark cardigan and blouse, neutral colors, covered torso visible, clean bright neutral studio, pale wall, no dark background, same background, background unchanged, pose unchanged, looking at viewer, neutral expression, moderate bust volume under clothing"
+  positive: "masterpiece, best quality, score_9, score_8, safe, 1girl, adult woman, fully clothed, nonsexual, solo, upper body, waist-up portrait, front view, dark brown hair, long hair, hair away from face, opaque modest top, simple dark cardigan and blouse, neutral colors, covered torso visible, clean bright neutral studio, pale wall, no dark background, same background, background unchanged, pose unchanged, looking at viewer, neutral expression, larger bust volume under clothing"
+  unconditional: "masterpiece, best quality, score_9, score_8, safe, 1girl, adult woman, fully clothed, nonsexual, solo, upper body, waist-up portrait, front view, dark brown hair, long hair, hair away from face, opaque modest top, simple dark cardigan and blouse, neutral colors, covered torso visible, clean bright neutral studio, pale wall, no dark background, same background, background unchanged, pose unchanged, looking at viewer, neutral expression, moderate bust volume under clothing"
+  neutral: "masterpiece, best quality, score_9, score_8, safe, 1girl, adult woman, fully clothed, nonsexual, solo, upper body, waist-up portrait, front view, dark brown hair, long hair, hair away from face, opaque modest top, simple dark cardigan and blouse, neutral colors, covered torso visible, clean bright neutral studio, pale wall, no dark background, same background, background unchanged, pose unchanged, looking at viewer, neutral expression, moderate bust volume under clothing"
+  guidance_scale: 2.0
+  action: "enhance"
+  width: 896
+  height: 1152
+  batch_size: 1
+
+# 5: training.
+- target: "masterpiece, best quality, score_9, score_8, safe, 1girl, adult woman, fully clothed, nonsexual, solo, upper body, waist-up portrait, three-quarter view, dark brown hair, short hair, side-parted hair, opaque modest top, simple dark ribbed top, neutral colors, covered torso visible, clean bright neutral studio, pale wall, no dark background, same background, background unchanged, pose unchanged, looking at viewer, neutral expression, moderate bust volume under clothing"
+  positive: "masterpiece, best quality, score_9, score_8, safe, 1girl, adult woman, fully clothed, nonsexual, solo, upper body, waist-up portrait, three-quarter view, dark brown hair, short hair, side-parted hair, opaque modest top, simple dark ribbed top, neutral colors, covered torso visible, clean bright neutral studio, pale wall, no dark background, same background, background unchanged, pose unchanged, looking at viewer, neutral expression, larger bust volume under clothing"
+  unconditional: "masterpiece, best quality, score_9, score_8, safe, 1girl, adult woman, fully clothed, nonsexual, solo, upper body, waist-up portrait, three-quarter view, dark brown hair, short hair, side-parted hair, opaque modest top, simple dark ribbed top, neutral colors, covered torso visible, clean bright neutral studio, pale wall, no dark background, same background, background unchanged, pose unchanged, looking at viewer, neutral expression, moderate bust volume under clothing"
+  neutral: "masterpiece, best quality, score_9, score_8, safe, 1girl, adult woman, fully clothed, nonsexual, solo, upper body, waist-up portrait, three-quarter view, dark brown hair, short hair, side-parted hair, opaque modest top, simple dark ribbed top, neutral colors, covered torso visible, clean bright neutral studio, pale wall, no dark background, same background, background unchanged, pose unchanged, looking at viewer, neutral expression, moderate bust volume under clothing"
+  guidance_scale: 2.0
+  action: "enhance"
+  width: 896
+  height: 1152
+  batch_size: 1
+
+# 6: held-out evaluation.
+- target: "masterpiece, best quality, score_9, score_8, safe, 1girl, adult woman, fully clothed, nonsexual, solo, upper body, waist-up portrait, front view, dark brown hair, long hair, hair away from face, opaque modest top, simple dark cardigan, neutral colors, covered torso visible, clean bright neutral studio, pale wall, no dark background, same background, background unchanged, pose unchanged, looking at viewer, neutral expression, moderate bust volume under clothing"
+  positive: "masterpiece, best quality, score_9, score_8, safe, 1girl, adult woman, fully clothed, nonsexual, solo, upper body, waist-up portrait, front view, dark brown hair, long hair, hair away from face, opaque modest top, simple dark cardigan, neutral colors, covered torso visible, clean bright neutral studio, pale wall, no dark background, same background, background unchanged, pose unchanged, looking at viewer, neutral expression, larger bust volume under clothing"
+  unconditional: "masterpiece, best quality, score_9, score_8, safe, 1girl, adult woman, fully clothed, nonsexual, solo, upper body, waist-up portrait, front view, dark brown hair, long hair, hair away from face, opaque modest top, simple dark cardigan, neutral colors, covered torso visible, clean bright neutral studio, pale wall, no dark background, same background, background unchanged, pose unchanged, looking at viewer, neutral expression, moderate bust volume under clothing"
+  neutral: "masterpiece, best quality, score_9, score_8, safe, 1girl, adult woman, fully clothed, nonsexual, solo, upper body, waist-up portrait, front view, dark brown hair, long hair, hair away from face, opaque modest top, simple dark cardigan, neutral colors, covered torso visible, clean bright neutral studio, pale wall, no dark background, same background, background unchanged, pose unchanged, looking at viewer, neutral expression, moderate bust volume under clothing"
+  guidance_scale: 2.0
+  action: "enhance"
+  width: 896
+  height: 1152
+  batch_size: 1
+
+# 7: held-out evaluation.
+- target: "masterpiece, best quality, score_9, score_8, safe, 1girl, adult woman, fully clothed, nonsexual, solo, upper body, waist-up portrait, three-quarter view, dark brown hair, medium hair, hair tucked behind ears, opaque modest top, simple dark vest over shirt, neutral colors, covered torso visible, clean bright neutral studio, pale wall, no dark background, same background, background unchanged, pose unchanged, looking at viewer, neutral expression, moderate bust volume under clothing"
+  positive: "masterpiece, best quality, score_9, score_8, safe, 1girl, adult woman, fully clothed, nonsexual, solo, upper body, waist-up portrait, three-quarter view, dark brown hair, medium hair, hair tucked behind ears, opaque modest top, simple dark vest over shirt, neutral colors, covered torso visible, clean bright neutral studio, pale wall, no dark background, same background, background unchanged, pose unchanged, looking at viewer, neutral expression, larger bust volume under clothing"
+  unconditional: "masterpiece, best quality, score_9, score_8, safe, 1girl, adult woman, fully clothed, nonsexual, solo, upper body, waist-up portrait, three-quarter view, dark brown hair, medium hair, hair tucked behind ears, opaque modest top, simple dark vest over shirt, neutral colors, covered torso visible, clean bright neutral studio, pale wall, no dark background, same background, background unchanged, pose unchanged, looking at viewer, neutral expression, moderate bust volume under clothing"
+  neutral: "masterpiece, best quality, score_9, score_8, safe, 1girl, adult woman, fully clothed, nonsexual, solo, upper body, waist-up portrait, three-quarter view, dark brown hair, medium hair, hair tucked behind ears, opaque modest top, simple dark vest over shirt, neutral colors, covered torso visible, clean bright neutral studio, pale wall, no dark background, same background, background unchanged, pose unchanged, looking at viewer, neutral expression, moderate bust volume under clothing"
+  guidance_scale: 2.0
+  action: "enhance"
+  width: 896
+  height: 1152
+  batch_size: 1

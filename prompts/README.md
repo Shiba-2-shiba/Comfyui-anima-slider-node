@@ -79,7 +79,15 @@ ComfyUIを再起動して候補一覧を更新し、保存済みワークフロ�
 
 [Anima 2.9B正式ワークフロー](../workflows/README.md)を使う場合、対象YAMLと出力prefixを選び直してください。eta1.5 × YAML guidance2.0 × teacher guidance1.0で**実効係数3.0**です。ノード側の明示サイズ1024×1024がYAMLの896×1152より優先されます。比較時はseedの実行後制御を`fixed`にし、初期LoRA乱数の制約も[調査手順](doc/slider-direction-investigation.md)に従って記録します。
 
-新しい候補を一覧へ反映するにはComfyUIを再起動するか、`custom_prompt_yaml_path`へ新YAMLの絶対パスを指定します。**学習・生成品質は未検証**です。胸部容量と服の密着、衣服のゆとりと体形・しわの変化を分けて評価する方法は[具体的な検討文書](doc/breast-size-clothing-fit-investigation.md)を参照してください。
+新しい候補を一覧へ反映するにはComfyUIを再起動するか、`custom_prompt_yaml_path`へ新YAMLの絶対パスを指定します。2026-09-23に胸部増大v2（Lora8）と衣服ゆったりv3（Lora9）の提供画像を評価しました。胸部減少v3・衣服密着v2は未評価です。結果は[画像評価と胸部v4](doc/lora8-lora9-breast-v4-evaluation.md)、当初の実験設計は[検討文書](doc/breast-size-clothing-fit-investigation.md)を参照してください。
+
+## 胸部増大 v4（目的句を簡潔にした候補）
+
+[prompts-anima-breast_size_slider_v4.yaml](prompts-anima-breast_size_slider_v4.yaml)は、Lora8で見られた腰・太ももの幅増加を受けた**未学習の改善候補**です。v2のpositiveにある4つの目的句を`larger bust volume under clothing`だけへ置換し、基準`moderate bust volume under clothing`との差を容量へ絞りました。基準3ロール、8項目の髪・衣服・画角、全数値はv2と同じです。既存v3は胸部減少用として残します。
+
+設定は上記v2と同じ`enhance_only`、train 0～5 / eval 6～7、guidance 2、eta 1.5、teacher guidance 1、900 steps。Lora8との比較ではノードに1024×1024を明示してください。出力prefix例は`loras/anima_breast_increase_v4`。`custom_prompt_yaml_path`が設定済みなら空欄かv4の絶対パスへ更新します。
+
+腰・脚を固定する機能の追加ではなく、文章差分を狭める実験です。上半身学習は維持するため、**再学習後の全身画像で、同程度の胸部効果における腰・太ももの変化を比較**してください。提供Lora8・Lora9は共通の強度0画像を持ちますが、生成文・seedは各1種類だけです。Lora9の`3.4.png`の実強度は4.0でした。詳しい所見・次案・評価条件は[評価文書](doc/lora8-lora9-breast-v4-evaluation.md)にまとめています。
 
 ## 8プロンプト構成のYAML
 
