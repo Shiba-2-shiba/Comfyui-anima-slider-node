@@ -1,4 +1,18 @@
-# 全身年齢スライダー旧版
+# スライダー旧版アーカイブ
+
+## 胸部サイズスライダー旧版
+
+2026-09-24に[胸部増大v4](../prompts-anima-breast_size_slider_v4.yaml)を正式採用し、以下の3本を内容そのままで移動しました。縮小方向は不要という判断のため、v3も通常の候補一覧から外しています。[Lora10の評価と採用記録](../doc/lora10-breast-evaluation.md)を参照してください。
+
+| 版 | 方向・用途 | ファイル |
+| --- | --- | --- |
+| 初版 | 大きめ／小さめの対向属性 | [prompts-anima-breast_size_slider.yaml](prompts-anima-breast_size_slider.yaml) |
+| v2 | 中程度→増大、目的4句 | [prompts-anima-breast_size_slider_v2.yaml](prompts-anima-breast_size_slider_v2.yaml) |
+| v3 | 中程度→縮小 | [prompts-anima-breast_size_slider_v3.yaml](prompts-anima-breast_size_slider_v3.yaml) |
+
+旧版の再現には`custom_prompt_yaml_path`へ移動先の絶対パスを指定してください。旧版YAML内の候補・未評価というコメントは作成時の記録で、現在の採用状況ではありません。
+
+## 全身年齢スライダー旧版
 
 v1～v8の学習用YAMLを本文そのままで保存しています。正規版は[老齢化（旧v9）](../prompts-anima-aging_slider_fullbody.yaml)と[幼齢化（旧v10）](../prompts-anima-deaging_slider_fullbody.yaml)です。
 

@@ -17,14 +17,12 @@ ComfyUIに通常使用版JSONをドロップするか、ワークフローとし
 | --- | --- |
 | 老齢化（通常使用版の選択値） | `prompts-anima-aging_slider_fullbody.yaml` |
 | 幼齢化 | `prompts-anima-deaging_slider_fullbody.yaml` |
-| 既存胸部サイズの調査 | `prompts-anima-breast_size_slider.yaml` |
+| 胸部サイズ：中程度→増大（正式版） | `prompts-anima-breast_size_slider_v4.yaml` |
 | 既存衣服フィットの調査 | `prompts-anima-clothing_fit_slider.yaml` |
-| 胸部サイズ：中程度→増加 | `prompts-anima-breast_size_slider_v2.yaml` |
-| 胸部サイズ：中程度→減少 | `prompts-anima-breast_size_slider_v3.yaml` |
 | 衣服：標準→密着 | `prompts-anima-clothing_fit_slider_v2.yaml` |
 | 衣服：標準→ゆったり | `prompts-anima-clothing_fit_slider_v3.yaml` |
 
-v2/v3は方向ごとに分けた未学習のプロンプト例。全て`enhance_only`で別LoRAとして学習し、正の強度で適用する。設定と出力prefix例は[プロンプトREADME](../prompts/README.md)を参照。これらもguidance2.0なので実効係数3.0となる。
+胸部はLora10の評価を受けてv4のみ正式採用し、初版・v2・縮小用v3は[archive](../prompts/archive/README.md)へ移動した。衣服v2/v3は方向別の学習例で、ゆったりv3はLora9で評価済み、密着v2は未評価。胸部v4・衣服v2/v3は`enhance_only`で別LoRAとして学習し、正の強度で適用する。設定と出力prefix例は[プロンプトREADME](../prompts/README.md)を参照。これらもguidance2.0なので実効係数3.0となる。
 
 `custom_prompt_yaml_path`は空欄。入力すると`prompt_yaml`より優先される。ComfyUIが改名前の一覧を保持している場合は再起動してから開く。原本を再現する場合、旧v5はarchiveにあるため、この入力へ移動先YAMLの絶対パスを指定する。
 

@@ -324,7 +324,7 @@ class PromptUtilTests(unittest.TestCase):
                 self.assertNotIn(term, unconditional)
 
     def test_breast_size_slider_keeps_body_axis_clothed_and_nonsexual(self):
-        prompts = prompt_util.load_prompts_from_yaml(REPO_ROOT / "prompts" / "prompts-anima-breast_size_slider.yaml")
+        prompts = prompt_util.load_prompts_from_yaml(REPO_ROOT / "prompts" / "archive" / "prompts-anima-breast_size_slider.yaml")
         rejected_terms = {"cleavage", "nude", "bikini", "lingerie", "seductive", "revealing", "pink hair", "red hair", "blonde hair"}
 
         self._assert_fixed_phase2_context(prompts)

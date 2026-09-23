@@ -1,14 +1,14 @@
 # v4: moderate-to-larger covered bust; simplified size-only contrast from v2.
 # target/unconditional/neutral, contexts and numeric settings are identical to v2.
 # Only positive destination text changes: four cues -> larger bust volume under clothing.
-# v3 remains the independent moderate-to-smaller candidate; v4 does not replace it.
+# Official breast-increase version adopted on 2026-09-24; initial/v2/v3 are archived.
 # Required node setting: direction_loss=enhance_only; apply positive LoRA weights.
 # Train indices: 0,1,2,3,4,5; held-out evaluation indices: 6,7.
 # guidance_scale=2.0; eta=1.5 and teacher_guidance_scale=1.0 give effective_eta=3.0.
 # The Anima 2.9B workflow explicitly uses 1024x1024, overriding YAML 896x1152.
-# New training candidate: reduction of waist/thigh/hair drift is NOT yet verified.
+# Lora10 evaluation shows reduced waist/thigh drift; residual side effects remain.
 # Waist-up training is retained for a controlled contrast; evaluate on full-body images.
-# See doc/lora8-lora9-breast-v4-evaluation.md for evidence, limitations and next tests.
+# See doc/lora10-breast-evaluation.md for evidence and limitations.
 
 # 0: training.
 - target: "masterpiece, best quality, score_9, score_8, safe, 1girl, adult woman, fully clothed, nonsexual, solo, upper body, waist-up portrait, front view, dark brown hair, medium hair, hair away from face, opaque modest top, simple dark knit top, neutral colors, covered torso visible, clean bright neutral studio, pale wall, no dark background, same background, background unchanged, pose unchanged, looking at viewer, neutral expression, moderate bust volume under clothing"
