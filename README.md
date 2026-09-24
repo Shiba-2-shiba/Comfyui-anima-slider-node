@@ -34,7 +34,20 @@ Anima 2.9B用の[正式採用学習ワークフロー](workflows/anima_2_9b_slid
 - `lora_path`: 保存済み `.safetensors`
 - `report_path`: 保存済み `.json`
 
-LoRA と report は ComfyUI の output directory 配下に保存されます。`output_lora_prefix` の既定値は `loras/anima_slider` です。
+LoRA と report は ComfyUI の output directory 配下に保存されます。
+
+### LoRA名の自動入力
+
+通常版・QPOLA版とも、新規ノードの追加時とプロンプトの選択変更時に、`output_lora_prefix` へプロンプトのファイル名を反映します。
+
+- 例: `prompts-anima-breast_size_slider_v4.yaml` → `loras/anima_breast_size_slider_v4`
+- 自動入力後は、`_test01` などを自由に追記・修正できます。実行時は編集した名前を使います。
+- 別のプロンプトへ切り替えると、手動の追記部分も含めて新しい名前に置き換わります。同じ選択値の再確定では置き換えません。
+- 保存済みワークフローの読み込みやノードの複製では、保存された名前を維持します。既存の `loras/anima_age_slider` も維持するため、自動入力を使うには一度別のプロンプトへ切り替えてください。
+- `custom_prompt_yaml_path` が入力されている場合は、そのファイル名を優先します（例: `C:\prompts\my_trial.yaml` → `loras/my_trial`）。この間、同梱プロンプトの選択変更では名前を更新しません。カスタムパスを空欄に戻すと、選択中の同梱プロンプト名を反映します。
+- 自動入力する保存先は `loras/` です。保存時の連番・拡張子は従来どおり付加されます。
+
+更新後は ComfyUI を再起動し、ブラウザーを再読み込みしてください。この自動入力はUI拡張の機能です。APIからの実行では、指定された `output_lora_prefix` をそのまま使用します。
 
 学習時は、ComfyUI が `MODEL` に解決済みで持っている `model_config.unet_config["image_model"]` と `num_blocks`、および実際の `diffusion_model.blocks` 数から Anima variant を判定します。現状の対応は次の 2 種類です。
 
@@ -65,7 +78,7 @@ QPOLA固有設定:
 - `lr`: 既定値 `1e-4`。最初の比較候補は `3e-5`, `1e-4`, `3e-4` です。
 - `qpola_eps`: 局所勾配スケール正規化用epsilon。既定値は `1e-8` です。
 - `qpola_low_vram`: 各step後にCUDA allocator cacheを解放します。既定値は有効ですが、学習が遅くなる場合は無効化して比較してください。
-- `output_lora_prefix`: 既定値は `loras/anima_slider_qpola` です。
+- `output_lora_prefix`: UIでは上記のルールでプロンプト名を自動入力します。Pythonスキーマ上の既定値は `loras/anima_slider_qpola` です。
 
 QPOLAを初期化または実行できない場合、ノードはエラーで停止します。結果のoptimizerを偽らないため、AdamWへの自動フォールバックは行いません。report JSONとsafetensors metadataにはoptimizer種別とQPOLA versionが保存されます。
 
@@ -153,6 +166,16 @@ Anima のテキスト由来 Slider LoRA 学習において、逆伝播や演算�
 | output_lora_prefix | `loras/anima_autograd_smoke` | 同じ |
 
 ログは `[AnimaSliderDebug] ` プレフィックス付きの 1 行 1 イベント JSON として出力されます。
+
+## UI自動入力の開発用テスト
+
+追加依存なしで、Node.jsの標準テスト機能を使って名前変換・選択変更・保存値の復元を検証できます。
+
+```powershell
+node --experimental-vm-modules --test tests/test_lora_name_sync.mjs
+```
+
+ComfyUI画面の描画確認はこのテストに含みません。
 
 ## Third-party notice
 

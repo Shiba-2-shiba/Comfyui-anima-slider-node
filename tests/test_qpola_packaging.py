@@ -76,6 +76,7 @@ class QpolaPackagingTests(unittest.TestCase):
             expected = {
                 f"{package_root}/__init__.py",
                 f"{package_root}/nodes.py",
+                f"{package_root}/web/lora_name_sync.js",
                 f"{qpola_root}/optimizer.py",
                 f"{qpola_root}/qpola_kernel.ptx",
                 f"{qpola_root}/qpola.cu",

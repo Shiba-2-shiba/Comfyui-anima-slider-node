@@ -9,4 +9,6 @@ except ImportError as exc:
     NODE_DISPLAY_NAME_MAPPINGS = {}
     comfy_entrypoint = None
 
-__all__ = ["NODE_CLASS_MAPPINGS", "NODE_DISPLAY_NAME_MAPPINGS", "comfy_entrypoint"]
+WEB_DIRECTORY = "./web"
+
+__all__ = ["NODE_CLASS_MAPPINGS", "NODE_DISPLAY_NAME_MAPPINGS", "comfy_entrypoint", "WEB_DIRECTORY"]
